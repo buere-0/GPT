@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sinais por Screenshot — Compra/Venda (1m)</title>
+  <style>
+    :root{--bg:#0b0d10;--panel:#11141a;--line:#2a2f3a;--txt:#e8eef6;--muted:#9aa8b5;--green:#24c26a;--red:#ff4d4f;--yellow:#ffd166}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell}
+    header{padding:16px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0f1318,#0b0d10)}
+    h1{font-size:18px;margin:0}
+    main{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+    .card header{padding:12px 14px;border-bottom:1px solid var(--line);background:#0e1217}
+    .card header h2{font-size:14px;margin:0;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+    .card .content{padding:14px}
+    label{display:block;margin:10px 0 6px;color:var(--muted);font-size:13px}
+    input[type=file], select, input[type=number]{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0f1318;color:var(--txt)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#121722;color:var(--txt);cursor:pointer}
+    .btn:hover{background:#151b26}
+    .btn.primary{background:var(--green);color:#062b17;border-color:#1fa65b;font-weight:600}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .drop{border:1.5px dashed var(--line);border-radius:12px;padding:8px;text-align:center;color:var(--muted);font-size:12px;margin:8px 0}
+    canvas{max-width:100%;width:100%;display:block;background:#0a0c10;border-radius:12px}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);color:var(--muted)}
+    .out{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0a0e12;border:1px solid var(--line);padding:12px;border-radius:10px;white-space:pre-wrap}
+    .legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+    .dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+    .dot.green{background:var(--green)} .dot.red{background:var(--red)} .dot.yellow{background:var(--yellow)} .dot.blue{background:#52a7ff}
+    .muted{color:var(--muted)}
+    footer{padding:12px 16px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+    .pill{padding:4px 8px;border-radius:8px;background:#0f141b;border:1px solid var(--line)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Scalp por Screenshot — DOGE/qualquer par (leitura rápida do gráfico)</h1>
+  </header>
+  <main>
+    <!-- Painel esquerdo: Controles -->
+    <section class="card">
+      <header><h2>Entrada</h2></header>
+      <div class="content">
+        <label>Imagem do gráfico (screenshot do candle)</label>
+        <input id="file" type="file" accept="image/*" capture="environment" />
+        <div class="drop" id="dropZone">Arrasta & solta a imagem aqui, ou <b>cola (Ctrl/⌘+V)</b> um print</div>
+        <div class="muted">Dica: use screenshot limpo (sem DOM/livro) e com a coluna de preços visível na direita.</div>
+        <div style="height:12px"></div>
+        <div class="row">
+          <div>
+            <label>Modo</label>
+            <select id="mode">
+              <option value="manual" selected>Manual (confiável)</option>
+              <option value="auto">Auto (beta)</option>
+            </select>
+          </div>
+          <div>
+            <label>Buffer de rompimento (px)</label>
+            <input id="buffer" type="number" step="1" value="6" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Regra de limite (rompimento)</label>
+            <select id="boundaryMode">
+              <option value="strict" selected>Estrita (apenas &gt; / &lt;)</option>
+              <option value="inclusive">Inclusiva (&ge; / &le;)</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Stop (px)</label>
+            <input id="stopPx" type="number" step="1" value="18" />
+          </div>
+          <div>
+            <label>RR (alvo = stop × RR)</label>
+            <input id="rr" type="number" step="0.1" value="1.5" />
+          </div>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button class="btn primary" id="analyzeBtn" disabled>Analisar</button>
+          <button class="btn" id="resetBtn">Limpar</button>
+          <button class="btn" id="demoBtn">Demo</button>
+          <button class="btn" id="testBtn">Testes</button>
+        </div>
+        <div class="legend">
+          <span class="pill"><span class="dot blue"></span> Topo/Fundo (range)</span>
+          <span class="pill"><span class="dot yellow"></span> Entrada</span>
+          <span class="pill"><span class="dot green"></span> Alvo</span>
+          <span class="pill"><span class="dot red"></span> Stop</span>
+        </div>
+        <div style="margin-top:10px" class="muted">
+          <b>Manual:</b> clique na imagem em <i>Topo do range</i>, <i>Fundo do range</i> e <i>Último preço</i> (3 cliques).<br>
+          <b>Auto (beta):</b> tenta estimar topo/fundo e último preço pela borda direita do gráfico. Se não achar, usa fallback e recomenda "ESPERA".
+        </div>
+      </div>
+    </section>
+
+    <!-- Painel direito: Prévia + Resultado -->
+    <section class="card" style="display:grid;grid-template-rows:auto 1fr auto">
+      <header><h2>Prévia</h2></header>
+      <div class="content">
+        <canvas id="canvas" width="1200" height="700"></canvas>
+      </div>
+      <footer>
+        <div id="result" class="out">Carrega/cola/arrasta uma imagem, clica <b>Analisar</b>. No modo Manual, marca 3 pontos: Topo → Fundo → Último preço.</div>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    // ====== Elements ======
+    const fileEl = document.getElementById('file');
+    const dropZone = document.getElementById('dropZone');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const modeEl = document.getElementById('mode');
+    const bufferEl = document.getElementById('buffer');
+    const stopPxEl = document.getElementById('stopPx');
+    const rrEl = document.getElementById('rr');
+    const boundaryModeEl = document.getElementById('boundaryMode');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const demoBtn = document.getElementById('demoBtn');
+    const testBtn = document.getElementById('testBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultEl = document.getElementById('result');
+
+    // ====== State ======
+    let img = new Image();
+    let imgReady = false;      // TRUE somente quando onload disparou com sucesso
+    let sceneReady = false;    // TRUE quando há algo válido no canvas (imagem OU demo)
+    let manualPoints = [];     // [top, bottom, last]
+
+    // ====== Utils ======
+    function setMsg(txt){ resultEl.textContent = txt; }
+    function showHTML(html){ resultEl.innerHTML = html; }
+
+    function safeDrawImage(i, x, y, w, h){
+      // desenha só se a imagem estiver OK e completamente carregada
+      if(!i) return;
+      if(!i.complete) return;           // ainda carregando
+      // width/height == 0 é indício de estado "broken" em alguns navegadores
+      if(!(i.naturalWidth>0 && i.naturalHeight>0)) return;
+      ctx.drawImage(i, x, y, w, h);
+    }
+
+    function loadBlobToImage(blob){
+      try{
+        const url = URL.createObjectURL(blob);
+        imgReady = false; sceneReady = false; analyzeBtn.disabled = true;
+        manualPoints = [];
+        img = new Image();
+        img.onload = () => {
+          try{
+            URL.revokeObjectURL(url);
+          }catch(_){/*noop*/}
+          imgReady = true; sceneReady = true;
+          const maxW = canvas.width, maxH = canvas.height;
+          const ratio = Math.min(maxW/img.width, maxH/img.height);
+          const w = Math.max(1, img.width * ratio);
+          const h = Math.max(1, img.height * ratio);
+          const x = (canvas.width - w)/2; const y = (canvas.height - h)/2;
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          safeDrawImage(img, x, y, w, h);
+          canvas._imgRect = {x, y, w, h};
+          drawOverlay();
+          analyzeBtn.disabled = false;
+          setMsg('Imagem carregada. (Manual: clique Topo → Fundo → Último preço).');
+        };
+        img.onerror = () => {
+          try{ URL.revokeObjectURL(url); }catch(_){/*noop*/}
+          imgReady = false; sceneReady = false; analyzeBtn.disabled = true;
+          setMsg('Falha ao carregar a imagem. Salva o arquivo e tenta novamente.');
+        };
+        img.src = url;
+      }catch(err){
+        imgReady = false; sceneReady = false; analyzeBtn.disabled = true;
+        setMsg('Erro ao preparar imagem: '+(err?.message||err));
+      }
+    }
+
+    function handleFile(f){
+      if(!f){ setMsg('Nenhum arquivo.'); return; }
+      if(!f.type || !f.type.startsWith('image/')){ setMsg('Arquivo não é imagem.'); return; }
+      loadBlobToImage(f);
+    }
+
+    // ====== Inputs ======
+    fileEl.addEventListener('change', (e)=> handleFile(e.target.files && e.target.files[0]));
+
+    // Drag & drop visuals
+    ['dragenter','dragover'].forEach(ev=> dropZone.addEventListener(ev, e=>{ e.preventDefault(); dropZone.style.borderColor = '#52a7ff'; }));
+    ['dragleave','drop'].forEach(ev=> dropZone.addEventListener(ev, e=>{ e.preventDefault(); dropZone.style.borderColor = 'var(--line)'; }));
+
+    // DROP handler (sem parêntese extra; robusto a link vs arquivo)
+    dropZone.addEventListener('drop', e => {
+      const dt = e.dataTransfer;
+      if(dt && dt.files && dt.files.length){ handleFile(dt.files[0]); return; }
+      const url = dt && (dt.getData('text/uri-list') || dt.getData('text/plain'));
+      if(url){ setMsg('Recebi um LINK, não um arquivo. Salva a imagem no PC e arrasta o ARQUIVO aqui, ou usa Ctrl/⌘+V.'); return; }
+      setMsg('Nada para processar no drop.');
+    });
+
+    // Paste (Ctrl/⌘+V)
+    document.addEventListener('paste', (e)=>{
+      const items = e.clipboardData && e.clipboardData.items;
+      if(!items){ setMsg('Sem acesso ao clipboard. Seleciona arquivo.'); return; }
+      for(const it of items){
+        if(it.type && it.type.startsWith('image/')){ const blob = it.getAsFile(); handleFile(blob); return; }
+      }
+      setMsg('Nada de imagem na área de transferência. Copia a imagem ou salva o arquivo.');
+    });
+
+    // Clique manual no canvas
+    canvas.addEventListener('click', (e)=>{
+      if(!sceneReady || modeEl.value !== 'manual') return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+      if(manualPoints.length < 3){
+        manualPoints.push({x,y});
+        drawOverlay();
+        const labels = ['Topo do range','Fundo do range','Último preço'];
+        setMsg(`Marcado: ${labels[manualPoints.length-1]} (${x|0}, ${y|0}).`);
+        if(manualPoints.length === 3){ analyze(); }
+      }
+    });
+
+    resetBtn.addEventListener('click', ()=>{
+      if(!sceneReady) return;
+      manualPoints = [];
+      drawOverlay();
+      setMsg('Limpo. Clique novamente (Topo → Fundo → Último preço).');
+    });
+
+    analyzeBtn.addEventListener('click', analyze);
+
+    // DEMO: desenha um gráfico sintético para testar sem imagem
+    demoBtn.addEventListener('click', ()=>{
+      imgReady = false;       // não há imagem HTML válida nesta cena
+      sceneReady = true;
+      analyzeBtn.disabled = false;
+      const r = {x:80, y:40, w: canvas.width-160, h: canvas.height-160};
+      canvas._imgRect = r;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // fundo
+      ctx.fillStyle = '#0d1117'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      // eixo preço
+      ctx.strokeStyle = '#2a2f3a'; ctx.lineWidth = 1;
+      for(let i=0;i<=10;i++){ let yy=r.y + (i/10)*r.h; ctx.beginPath(); ctx.moveTo(r.x,yy); ctx.lineTo(r.x+r.w,yy); ctx.stroke(); }
+      // velas
+      const N=90, cw=Math.floor(r.w/N); let y=r.y+r.h*0.6; let seed=1;
+      function rnd(){ seed=(seed*9301+49297)%233280; return seed/233280; }
+      for(let i=0;i<N;i++){
+        const x=r.x+i*cw+1;
+        const d=(rnd()-0.45)*(r.h*0.06);
+        const open=y; y = Math.max(r.y+5, Math.min(r.y+r.h-5, y-d));
+        const close=y; const hi=Math.min(open,close)-Math.abs(d)*0.6; const lo=Math.max(open,close)+Math.abs(d)*0.6;
+        ctx.strokeStyle = '#3b82f6'; ctx.beginPath(); ctx.moveTo(x+cw/2, hi); ctx.lineTo(x+cw/2, lo); ctx.stroke();
+        ctx.fillStyle = close<open ? '#22c55e' : '#ef4444';
+        const top=Math.min(open,close), bot=Math.max(open,close);
+        ctx.fillRect(x, top, cw-2, Math.max(1, bot-top));
+      }
+      manualPoints = [];
+      setMsg('DEMO pronto. Modo Manual: clique Topo → Fundo → Último preço, ou mude para Auto e clique Analisar.');
+    });
+
+    // ====== Lógica de decisão (pura) + Testes ======
+    function decideSide(topY, botY, lastY, buffer, boundaryMode){
+      // y menor = preço mais alto; y maior = preço mais baixo
+      const inclusive = boundaryMode === 'inclusive';
+      if(inclusive){
+        if(lastY <= (topY - buffer)) return 'COMPRA';
+        if(lastY >= (botY + buffer)) return 'VENDA';
+        return 'ESPERA';
+      } else {
+        if(lastY < (topY - buffer)) return 'COMPRA';
+        if(lastY > (botY + buffer)) return 'VENDA';
+        return 'ESPERA';
+      }
+    }
+
+    testBtn.addEventListener('click', ()=>{
+      const cases = [
+        {name:'Breakout topo', topY:200, botY:600, lastY:180, buffer:10, want:'COMPRA'},
+        {name:'Breakdown fundo', topY:200, botY:600, lastY:620, buffer:10, want:'VENDA'},
+        {name:'Dentro do range', topY:200, botY:600, lastY:400, buffer:10, want:'ESPERA'},
+        {name:'Limite superior sem buffer', topY:200, botY:600, lastY:191, buffer:-5, want:'COMPRA'},
+        {name:'Limite inferior com buffer grande', topY:200, botY:600, lastY:610, buffer:20, want:'ESPERA'},
+        // Casos adicionais (empate no limite) — regra ESTRITA espera ESPERA
+        {name:'Empate topo (==) [estrita]', topY:200, botY:600, lastY:190, buffer:10, want:'ESPERA'},
+        {name:'Empate fundo (==) [estrita]', topY:200, botY:600, lastY:610, buffer:10, want:'ESPERA'},
+        // Casos para regra INCLUSIVA — esperamos rompimento
+        {name:'Empate topo (==) [inclusiva → COMPRA]', topY:200, botY:600, lastY:190, buffer:10, want:'COMPRA', mode:'inclusive'},
+        {name:'Empate fundo (==) [inclusiva → VENDA]', topY:200, botY:600, lastY:610, buffer:10, want:'VENDA', mode:'inclusive'},
+      ];
+      const results = cases.map(c=>{
+        const got = decideSide(c.topY,c.botY,c.lastY,c.buffer, c.mode||'strict');
+        return `${c.name}: ${got===c.want?'PASS':'FAIL'} (got=${got}, want=${c.want})`;
+      }).join('\n');
+      showHTML(`<div class="out">${results.replaceAll('\n','<br>')}</div>`);
+      console.log(results);
+    });
+
+    // ====== Análise visual ======
+    function analyze(){
+      try{
+        if(!sceneReady){ setMsg('Carrega uma imagem (ou usa DEMO) primeiro.'); return; }
+        const buffer = parseFloat(bufferEl.value)||6;
+        const stopPx = parseFloat(stopPxEl.value)||18;
+        const rr = parseFloat(rrEl.value)||1.5;
+
+        let topY, botY, lastY;
+        if(modeEl.value === 'manual'){
+          if(manualPoints.length < 3){ setMsg('Marca 3 pontos: Topo → Fundo → Último preço.'); return; }
+          topY = manualPoints[0].y; botY = manualPoints[1].y; lastY = manualPoints[2].y;
+        } else {
+          const r = canvas._imgRect; if(!r){ setMsg('Imagem não renderizada. Tenta de novo.'); return; }
+          const x0 = Math.floor(r.x + r.w*0.88), x1 = Math.min(canvas.width-1, Math.floor(r.x + r.w*0.98));
+          const y0 = Math.floor(r.y + r.h*0.05), y1 = Math.floor(r.y + r.h*0.95);
+          if(x1<=x0 || y1<=y0){ setMsg('Recorte inválido. Usa Modo Manual.'); return; }
+          const data = ctx.getImageData(x0, y0, Math.max(1,x1-x0), Math.max(1,y1-y0));
+          let minY = y1, maxY = y0; let bright = [];
+          for(let yy=0; yy<data.height; yy++){
+            for(let xx=0; xx<data.width; xx++){
+              const idx=(yy*data.width+xx)*4; const rpx=data.data[idx], gpx=data.data[idx+1], bpx=data.data[idx+2];
+              const lum = 0.2126*rpx + 0.7152*gpx + 0.0722*bpx;
+              if(lum > 210) bright.push(y0+yy);
+              if(y0+yy < minY) minY = y0+yy;
+              if(y0+yy > maxY) maxY = y0+yy;
+            }
+          }
+          topY = minY + 10; botY = maxY - 10;
+          if(topY > botY){ const t = topY; topY = botY; botY = t; }
+          lastY = bright.length ? bright.sort((a,b)=>a-b)[Math.floor(bright.length/2)] : Math.round(r.y + r.h*0.5);
+        }
+
+        drawOverlay();
+        const entryColor='#ffd166', tgtColor=getCss('--green'), stopColor=getCss('--red');
+        const topColor='#52a7ff', botColor='#52a7ff';
+        drawHLine(topY, topColor, 1.5); drawHLine(botY, botColor, 1.5); drawHLine(lastY, entryColor, 1.5);
+
+        const boundaryMode = boundaryModeEl.value;
+        const side = decideSide(topY, botY, lastY, buffer, boundaryMode);
+        let entryY=lastY, stopY, tgtY, note='Sem rompimento válido (dentro do range).';
+        if(side==='COMPRA'){ stopY=entryY+stopPx; tgtY=entryY-stopPx*rr; note='Rompimento de topo com buffer.'; }
+        else if(side==='VENDA'){ stopY=entryY-stopPx; tgtY=entryY+stopPx*rr; note='Rompimento de fundo com buffer.'; }
+        if(side!=='ESPERA'){ drawHLine(stopY, stopColor, 1.5, [6,6]); drawHLine(tgtY, tgtColor, 1.5, [6,6]); }
+
+        const msg = renderMsg({side, topY, botY, lastY, buffer, stopPx, rr, note, boundaryMode});
+        showHTML(msg);
+      } catch(err){
+        setMsg('Erro ao analisar: '+ (err?.message||err));
+        console.error(err);
+      }
+    }
+
+    // ====== Desenho ======
+    function drawOverlay(){
+      const r = canvas._imgRect; if(!r) return;
+      // Não chame drawImage se a imagem ainda não está pronta — evita InvalidStateError
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      if(imgReady){ safeDrawImage(img, r.x, r.y, r.w, r.h); }
+      // pontos manuais
+      if(manualPoints.length){
+        manualPoints.forEach((p,i)=>{
+          ctx.fillStyle = ['#52a7ff','#52a7ff','#ffd166'][i] || '#999';
+          ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.rect(p.x-4,p.y-4,8,8); ctx.fill(); ctx.stroke();
+        });
+      }
+    }
+
+    function drawHLine(y,color,width=1,dash=null){
+      const r = canvas._imgRect; if(!r) return;
+      ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=width; if(dash) ctx.setLineDash(dash);
+      ctx.beginPath(); ctx.moveTo(r.x, y); ctx.lineTo(r.x+r.w, y); ctx.stroke(); ctx.restore();
+    }
+
+    function getCss(name){
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function renderMsg({side, topY, botY, lastY, buffer, stopPx, rr, note, boundaryMode}){
+      const badge = side==='COMPRA' ? `<span class="badge" style="background:var(--green);color:#062b17;border-color:#1fa65b">COMPRA</span>` : side==='VENDA' ? `<span class="badge" style="background:var(--red);color:#ffe8ea;border-color:#7a2a33">VENDA</span>` : `<span class="badge" style="background:#2a2f3a;color:#cdd6df;border-color:#3b4250">ESPERA</span>`;
+      const inclusive = boundaryMode === 'inclusive';
+      const modeTxt = inclusive ? 'Inclusiva (&ge; / &le;)' : 'Estrita (&gt; / &lt;)';
+      const topComparison = inclusive ? '&le;' : '&lt;';
+      const bottomComparison = inclusive ? '&ge;' : '&gt;';
+      const lines = [
+        badge,
+        '',
+        `Range (px): topo=${topY|0} • fundo=${botY|0}`,
+        `Último preço (px): ${lastY|0}`,
+        `Buffer: ${buffer}px  •  Stop: ${stopPx}px  •  RR: ${rr}x  •  Regra: ${modeTxt}`,
+        '',
+        `Regra: rompeu topo (y ${topComparison} topo - buffer) → COMPRA | rompeu fundo (y ${bottomComparison} fundo + buffer) → VENDA.`,
+        `Motivo: ${note}`
+      ];
+      return lines.join('<br>');
+    }
+  </script>
+</body>
+</html>
