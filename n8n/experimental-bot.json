@@ -1,0 +1,107 @@
+{
+  "name": "Screenshot Range Bot (Experimental)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "screenshot-range-bot",
+        "responseMode": "lastNode",
+        "options": {
+          "responseContentType": "application/json"
+        }
+      },
+      "id": "Webhook_Entrada",
+      "name": "Entrada Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "experimental-screenshot-range-bot"
+    },
+    {
+      "parameters": {
+        "functionCode": "const agents = [\n  {\n    id: 'agente_manualista',\n    nome: 'Laura Campos',\n    conta: 'cliente_manualista',\n    perfil: 'Scalper focada em marcação manual e validação visual antes de executar ordens.',\n    objetivos: [\n      'Validar rapidamente se o último preço rompeu o topo ou fundo do range.',\n      'Garantir que o buffer esteja adequado para evitar falsos rompimentos.',\n      'Lembrar de plotar stop e alvo proporcionais ao risco.'\n    ],\n    tom: 'Curiosa, direta, pergunta sobre cliques e overlays.',\n    exemploDialogo: [\n      {autor: 'Laura', texto: 'Acabei de marcar topo/fundo/último preço manualmente. O bot já traça stop e alvo sozinho?'},\n      {autor: 'IA', texto: 'Sim. Depois de clicar em Analisar ele usa o stop em pixels e RR configurados para desenhar stop e alvo no gráfico.'}\n    ]\n  },\n  {\n    id: 'agente_auto_beta',\n    nome: 'Renan Leme',\n    conta: 'cliente_auto_beta',\n    perfil: 'Trader que testa o modo Auto (beta) e exige explicações quando há fallback para ESPERA.',\n    objetivos: [\n      'Saber como o recorte automático identifica topo, fundo e último preço.',\n      'Entender mensagens de erro quando a imagem não é válida.',\n      'Usar o modo Demo para reproduzir cenários.'\n    ],\n    tom: 'Questionador, relata resultados do modo automático.',\n    exemploDialogo: [\n      {autor: 'Renan', texto: 'O modo auto devolveu ESPERA. Como ele decide isso?'},\n      {autor: 'IA', texto: 'Ele analisa a borda direita do gráfico, mede topo/fundo e compara o último preço com o buffer. Se permanecer dentro do range, responde ESPERA.'}\n    ]\n  },\n  {\n    id: 'agente_teste',\n    nome: 'Camila Duarte',\n    conta: 'cliente_teste',\n    perfil: 'Analista que confere a robustez da regra com o botão Testes.',\n    objetivos: [\n      'Rodar o conjunto de casos de teste direto no navegador.',\n      'Comparar regras Estrita versus Inclusiva.',\n      'Checar mensagens de erro quando não há imagem ou pontos suficientes.'\n    ],\n    tom: 'Metódica e orientada a QA.',\n    exemploDialogo: [\n      {autor: 'Camila', texto: 'Os testes para empate no limite estão passando?'},\n      {autor: 'IA', texto: 'Sim. O botão Testes roda cenários cobrindo empate tanto na regra Estrita quanto na Inclusiva.'}\n    ]\n  }\n];\n\nconst knowledge = [\n  {\n    id: 'workflow_manual',\n    titulo: 'Fluxo Manual',\n    resumo: 'No modo Manual o usuário marca topo → fundo → último preço na imagem ou no demo.',\n    detalhes: 'Clique no canvas em Topo, depois Fundo e por fim Último preço. Após três cliques a análise roda automaticamente.',\n    palavrasChave: ['manual', 'clique', 'topo', 'fundo', 'último preço', 'overlay'],\n    fonte: 'index.html §Manual Mode'\n  },\n  {\n    id: 'workflow_auto',\n    titulo: 'Fluxo Auto (beta)',\n    resumo: 'O modo Auto recorta a borda direita, estima topo/fundo e busca pixels claros para o último preço.',\n    detalhes: 'Se não encontrar padrões válidos, recomenda usar modo Manual e retorna ESPERA.',\n    palavrasChave: ['auto', 'beta', 'recorte', 'borda', 'espera'],\n    fonte: 'index.html §Auto Mode'\n  },\n  {\n    id: 'parametros_risco',\n    titulo: 'Parâmetros de risco',\n    resumo: 'Buffer, stop em pixels e RR configuram a decisão e o desenho de stop/alvo.',\n    detalhes: 'Stop e alvo são calculados a partir do último preço com base no stopPx e no múltiplo RR.',\n    palavrasChave: ['buffer', 'stop', 'rr', 'alvo'],\n    fonte: 'index.html §Risk Controls'\n  },\n  {\n    id: 'testes_embutidos',\n    titulo: 'Testes embarcados',\n    resumo: 'O botão Testes executa casos de COMPRA, VENDA, ESPERA e empates para Estrita e Inclusiva.',\n    detalhes: 'Os resultados aparecem no painel e são logados no console para debug.',\n    palavrasChave: ['testes', 'estrita', 'inclusiva', 'empate'],\n    fonte: 'index.html §Tests'\n  },\n  {\n    id: 'preparacao_imagem',\n    titulo: 'Preparo da imagem',\n    resumo: 'Aceita upload, arrastar/soltar, colagem e modo Demo para gerar gráfico sintético.',\n    detalhes: 'Mensagens guiam quando o arquivo não é imagem, quando o drop é um link ou quando a imagem falha.',\n    palavrasChave: ['upload', 'drag', 'drop', 'demo', 'erro'],\n    fonte: 'index.html §Image Handling'\n  },\n  {\n    id: 'resumo_readme',\n    titulo: 'Resumo do projeto',\n    resumo: 'Interface web estática que sugere operações de scalp por rompimento de range a partir de screenshots.',\n    detalhes: 'Passos principais: abrir index.html, carregar imagem, escolher modo, ajustar parâmetros e clicar Analisar.',\n    palavrasChave: ['leitura', 'screenshot', 'rompimento', 'passo'],\n    fonte: 'README.md'\n  }\n];\n\nconst ia = {\n  id: 'ia_responsiva',\n  nome: 'IA Range Objective',\n  estilo: 'Responde em português claro, direto ao ponto, citando regras e passos específicos.',\n  instrucoes: [\n    'Usar sempre vocabulário objetivo e técnico.',\n    'Explicar decisões usando terminologia de rompimento de range.',\n    'Referenciar mensagens do app quando relevante (ex: "Marca 3 pontos" ou "DEMO pronto").'\n  ]\n};\n\nconst entrada = $json ?? {};\nconst agentId = entrada.agentId || agents[0].id;\nconst mensagem = entrada.message || '';\n\nconst agente = agents.find(a => a.id === agentId) || agents[0];\n\nreturn [{\n  agentId,\n  mensagem,\n  agente,\n  ia,\n  knowledge\n}];"
+      },
+      "id": "Function_Contexto",
+      "name": "Preparar contexto",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        540,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const { mensagem, agente, ia, knowledge } = item;\n\nfunction selecionarSegmentos(msg, base){\n  if(!msg) return base.filter(seg => seg.id === 'resumo_readme');\n  const lower = msg.toLowerCase();\n  const matches = base.filter(seg => seg.palavrasChave.some(p => lower.includes(p)));\n  if(matches.length){ return matches; }\n  return base.filter(seg => ['resumo_readme','workflow_manual'].includes(seg.id));\n}\n\nconst segmentos = selecionarSegmentos(mensagem, knowledge);\nconst explicacoes = segmentos.map(seg => `• ${seg.titulo}: ${seg.resumo} — ${seg.detalhes}`).join('\n');\n\nconst saudacao = `Olá ${agente.nome.split(' ')[0]}, aqui é ${ia.nome}.`;\nconst resposta = `${saudacao}\n${agente.tom ? agente.tom.replace(/^[a-z]/, c => c.toUpperCase()) : ''}\n${explicacoes}\n\nCaso precise de mais detalhes, posso citar as mensagens exibidas na interface.`.trim();\n\nreturn [{\n  agentId: agente.id,\n  conta: agente.conta,\n  agente,\n  ia,\n  mensagemOriginal: mensagem,\n  resposta,\n  segmentos\n}];"
+      },
+      "id": "Function_Resposta",
+      "name": "Gerar resposta",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        820,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "responseBody": "={{$json}}"
+      },
+      "id": "Responder_Webhook",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Entrada Webhook": {
+      "main": [
+        [
+          {
+            "node": "Preparar contexto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar contexto": {
+      "main": [
+        [
+          {
+            "node": "Gerar resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar resposta": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "ScreenshotRangeBotExperimental",
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
