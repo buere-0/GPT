@@ -111,6 +111,7 @@
     </section>
   </main>
 
+  <script src="js/decision.js"></script>
   <script>
     // ====== Elements ======
     const fileEl = document.getElementById('file');
@@ -268,20 +269,6 @@
     });
 
     // ====== Lógica de decisão (pura) + Testes ======
-    function decideSide(topY, botY, lastY, buffer, boundaryMode){
-      // y menor = preço mais alto; y maior = preço mais baixo
-      const inclusive = boundaryMode === 'inclusive';
-      if(inclusive){
-        if(lastY <= (topY - buffer)) return 'COMPRA';
-        if(lastY >= (botY + buffer)) return 'VENDA';
-        return 'ESPERA';
-      } else {
-        if(lastY < (topY - buffer)) return 'COMPRA';
-        if(lastY > (botY + buffer)) return 'VENDA';
-        return 'ESPERA';
-      }
-    }
-
     testBtn.addEventListener('click', ()=>{
       const cases = [
         {name:'Breakout topo', topY:200, botY:600, lastY:180, buffer:10, want:'COMPRA'},
