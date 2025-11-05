@@ -1,0 +1,10 @@
+{
+  "name": "gpt-rendermsg",
+  "version": "1.0.0",
+  "description": "Utilities for rendering breach messages",
+  "main": "src/renderMsg.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}
