@@ -1,0 +1,59 @@
+{
+  "name": "Street Food - Gerar Post (2x/semana)",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "weekDay": [
+                "1",
+                "4"
+              ],
+              "hour": 9,
+              "minute": 0
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Agendamento Seg/Qui 09h",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst crypto = require('crypto');\n\n// ==== Config estática (pode ser movida para Variáveis Globais) ====\nconst cfg = {\n  \"site\": {\n    \"name\": \"Aventuras de Comida de Rua pelo Mundo\",\n    \"base_url\": \"https://SEU-DOMINIO.com\",\n    \"language\": \"pt-BR\",\n    \"author\": \"Street Food Bot\",\n    \"timezone\": \"America/Sao_Paulo\"\n  },\n  \"categories\": [\n    \"Street Food por Continente\",\n    \"Street Food Vegano\",\n    \"Street Food Barata\",\n    \"Guias Gastronômicos\",\n    \"Gadgets e Dicas\"\n  ],\n  \"longtails\": [\n    {\"keyword\": \"street food vegano em Bangkok\",\"category\": \"Street Food Vegano\",\"country\": \"Tailândia\",\"city\": \"Bangkok\"},\n    {\"keyword\": \"comidas de rua baratas em Lisboa\",\"category\": \"Street Food Barata\",\"country\": \"Portugal\",\"city\": \"Lisboa\"},\n    {\"keyword\": \"street food noturna em Tóquio\",\"category\": \"Guias Gastronômicos\",\"country\": \"Japão\",\"city\": \"Tóquio\"},\n    {\"keyword\": \"onde comer barato em Roma\",\"category\": \"Street Food Barata\",\"country\": \"Itália\",\"city\": \"Roma\"},\n    {\"keyword\": \"comida de rua no México (tacos e mercados)\",\"category\": \"Street Food por Continente\",\"country\": \"México\",\"city\": \"Cidade do México\"}\n  ],\n  \"rotation_policy\": {\"posts_per_week\": 2,\"min_days_between_same_keyword\": 180}\n};\n\nconst CONTENT_DIR = process.env.CONTENT_DIR || '/data/content';\nconst SEED = process.env.SEED || '';\n\nfunction slugify(text){\n  return text\n    .toLowerCase()\n    .normalize('NFD')\n    .replace(/[^\\p{L}\\p{N}\\s-]/gu, '')\n    .trim()\n    .replace(/[\\s_-]+/g, '-')\n    .replace(/^-+|-+$/g, '');\n}\n\nfunction today(){\n  return new Date().toISOString().split('T')[0];\n}\n\nfunction stableHash(s){\n  return crypto.createHash('sha256').update(s).digest('hex').slice(0, 12);\n}\n\nfunction readManifest(manifestPath){\n  try{\n    const raw = fs.readFileSync(manifestPath, 'utf8');\n    const j = JSON.parse(raw);\n    return Array.isArray(j.posts) ? j : {posts: []};\n  }catch(err){\n    return {posts: []};\n  }\n}\n\nfunction writeJson(p, obj){\n  fs.mkdirSync(path.dirname(p), {recursive: true});\n  fs.writeFileSync(p, JSON.stringify(obj, null, 2), 'utf8');\n}\n\nfunction pickKeyword(cfg, manifest){\n  const used = {};\n  for(const p of manifest.posts){\n    used[p.keyword] = p.date;\n  }\n\n  const minDays = Number(cfg.rotation_policy?.min_days_between_same_keyword ?? 180);\n  const candidates = cfg.longtails.filter(entry => {\n    const last = used[entry.keyword];\n    if(!last) return true;\n    const lastDate = new Date(last + 'T00:00:00Z');\n    const delta = (Date.now() - lastDate.getTime()) / 86400000;\n    return delta >= minDays;\n  });\n\n  const pool = candidates.length ? candidates : cfg.longtails;\n  const rng = crypto.createHash('sha256').update(Date.now().toString() + SEED).digest('hex');\n  const idx = parseInt(rng.slice(0, 8), 16) % pool.length;\n  return pool[idx];\n}\n\nfunction fallbackContent(entry){\n  const {keyword, city, country, category} = entry;\n  const title = `${keyword.charAt(0).toUpperCase() + keyword.slice(1)}: guia rápido para comer bem`.slice(0, 60);\n  const description = `Roteiro de street food em ${city} (${country}): preços médios, onde ir, dicas de segurança e FAQ.`.slice(0, 155);\n\n  const foods = [\n    {name: 'Prato clássico local', price: 'R$ 15–35', where: 'Mercado central / feiras', tip: 'Chega cedo para pegar comida fresca.'},\n    {name: 'Lanche de rua famoso', price: 'R$ 10–25', where: 'Ruas movimentadas perto de metrô', tip: 'Fila local costuma ser bom sinal.'},\n    {name: 'Bebida típica', price: 'R$ 6–18', where: 'Bancas com alta rotatividade', tip: 'Prefira sem gelo se duvidar da água.'},\n    {name: 'Doce popular', price: 'R$ 8–22', where: 'Barracas com vitrine fechada', tip: 'Evite doce exposto horas no sol.'},\n    {name: 'Opção veg/vegana', price: 'R$ 12–30', where: 'Praças de alimentação de mercados', tip: 'Confirme se o caldo/molho é sem origem animal.'},\n    {name: 'Snack de noite', price: 'R$ 12–28', where: 'Feiras noturnas', tip: 'Peça porções pequenas e repita o que gostar.'},\n    {name: 'Especial picante', price: 'R$ 14–32', where: 'Bancas populares entre locais', tip: 'Pergunte pelo nível de pimenta antes.'},\n    {name: 'Sobremesa gelada', price: 'R$ 10–24', where: 'Carrinhos próximos a praças', tip: 'Prefira gelo feito na hora ou industrializado.'}\n  ];\n\n  const safety = [\n    'Escolha barracas com preparo na hora e alta rotatividade.',\n    'Use água lacrada e desconfie de gelo de procedência duvidosa.',\n    'Carteira e celular na frente do corpo em áreas lotadas.',\n    'Cheque preços antes de pedir e prefira cardápio visível.',\n    'Se algo parecer morno ou parado, escolha outra barraca.',\n    'Em caso de desconforto estomacal, hidrate e procure farmácia local.'\n  ];\n\n  const faq = [\n    {q: `Melhor horário para comer street food em ${city}?`, a: 'Almoço é mais tranquilo; noite é mais vibrante. Chegue cedo para pegar tudo fresco.'},\n    {q: 'Dá para pagar com cartão?', a: 'Algumas barracas aceitam, mas leve dinheiro trocado para não depender.'},\n    {q: 'Como evitar golpe turístico?', a: 'Compare preços em 2–3 bancas e evite abordagem muito insistente.'},\n    {q: 'É seguro comer carne na rua?', a: 'Prefira carnes bem passadas e que saem direto da chapa ou fritadeira.'},\n    {q: 'Onde encontrar opções veganas?', a: 'Mercados centrais e feiras costumam ter bancas com legumes salteados e tofu.'}\n  ];\n\n  const tags = [slugify(category), slugify(country), slugify(city), 'street-food', 'viagem-barata'];\n\n  const intro = `${city} tem comida de rua direta, barata e com personalidade. Aqui vai um roteiro rápido do que comer, onde ir e como evitar cilada.`;\n  const cta = 'Curtiu? Salva o guia e compartilha com quem vai viajar contigo.';\n\n  return {title, description, h1: keyword, intro, foods, safety_tips: safety, stay_section: `Fica em regiões centrais de ${city} para ir a pé aos mercados e feiras.`, faq, cta, tags};\n}\n\nfunction estimateReadingTime(post){\n  const blocks = [post.title, post.description, post.intro, post.cta, ...post.safety_tips, ...post.faq.map(x=>x.q + ' ' + x.a), ...post.foods.map(x=>x.name)];\n  const words = blocks.join(' ').split(/\\s+/).filter(Boolean).length;\n  return Math.max(3, Math.ceil(words/220));\n}\n\nfunction generate(){\n  fs.mkdirSync(path.join(CONTENT_DIR, 'posts'), {recursive: true});\n  const manifestPath = path.join(CONTENT_DIR, 'posts', 'posts.json');\n  const manifest = readManifest(manifestPath);\n  const entry = pickKeyword(cfg, manifest);\n  const slug = slugify(`${entry.keyword}-${entry.city}-${entry.country}-${stableHash(entry.keyword+entry.city+entry.country)}`);\n  const base = fallbackContent(entry);\n  const post = {\n    slug,\n    keyword: entry.keyword,\n    category: entry.category,\n    country: entry.country,\n    city: entry.city,\n    title: base.title,\n    description: base.description,\n    date: today(),\n    reading_time_minutes: estimateReadingTime(base),\n    h1: base.h1 || entry.keyword,\n    intro: base.intro,\n    foods: base.foods,\n    safety_tips: base.safety_tips,\n    stay_section: base.stay_section,\n    faq: base.faq,\n    cta: base.cta,\n    tags: base.tags\n  };\n\n  const postPath = path.join(CONTENT_DIR, 'posts', `${slug}.json`);\n  writeJson(postPath, post);\n\n  const existing = manifest.posts.filter(p => p.slug !== slug);\n  existing.push({\n    slug: post.slug,\n    title: post.title,\n    description: post.description,\n    keyword: post.keyword,\n    category: post.category,\n    country: post.country,\n    city: post.city,\n    date: post.date,\n    reading_time_minutes: post.reading_time_minutes\n  });\n\n  existing.sort((a,b)=> a.date < b.date ? 1 : -1);\n  writeJson(manifestPath, {posts: existing});\n\n  return {post, files: {postPath, manifestPath}};\n}\n\nconst output = generate();\nreturn [{json: output}];\n"
+      },
+      "id": "2",
+      "name": "Gerar Post",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Agendamento Seg/Qui 09h": {
+      "main": [
+        [
+          {
+            "node": "Gerar Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "9361c95b-7459-4c14-a0f0-ea7bb2fc36e0"
+}
