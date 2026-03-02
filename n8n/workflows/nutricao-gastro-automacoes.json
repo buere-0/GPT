@@ -1,0 +1,439 @@
+{
+  "name": "Nutrição & Gastro POA - Pacote de Automações",
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "local-dev"
+  },
+  "workflows": [
+    {
+      "name": "[POA] Sincronizar Base de Profissionais",
+      "nodes": [
+        {
+          "id": "1",
+          "name": "Agendamento Diário",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "typeVersion": 1.2,
+          "position": [
+            220,
+            260
+          ],
+          "parameters": {
+            "rule": {
+              "interval": [
+                {
+                  "triggerAtHour": 8
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "2",
+          "name": "Lista Base (Code)",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            460,
+            260
+          ],
+          "parameters": {
+            "language": "javaScript",
+            "jsCode": "return [\n  { json: { nome: 'Thaíse Paim', especialidade: 'Nutricionista', preco: 'R$ 250', endereco: 'POA (3 locais)', maps: '' } },\n  { json: { nome: 'Dr. Marcos Castiel', especialidade: 'Nutricionista', preco: 'R$ 280', endereco: 'Av. Tarso Dutra, 161', maps: 'https://www.google.com/maps/search/?api=1&query=Avenida%20Tarso%20Dutra%20161%20Porto%20Alegre%20RS' } },\n  { json: { nome: 'Dra. Carine Leite', especialidade: 'Gastroenterologista', preco: 'R$ 420', endereco: 'Rua Padre Chagas, 185/706', maps: 'https://www.google.com/maps/search/?api=1&query=Rua%20Padre%20Chagas%20185%2F706%20Porto%20Alegre%20RS' } }\n];"
+          }
+        },
+        {
+          "id": "3",
+          "name": "Normalizar Campos",
+          "type": "n8n-nodes-base.set",
+          "typeVersion": 3.4,
+          "position": [
+            700,
+            260
+          ],
+          "parameters": {
+            "assignments": {
+              "assignments": [
+                {
+                  "id": "a1",
+                  "name": "nome",
+                  "value": "={{ $json.nome }}",
+                  "type": "string"
+                },
+                {
+                  "id": "a2",
+                  "name": "especialidade",
+                  "value": "={{ $json.especialidade }}",
+                  "type": "string"
+                },
+                {
+                  "id": "a3",
+                  "name": "preco_publicado",
+                  "value": "={{ $json.preco }}",
+                  "type": "string"
+                },
+                {
+                  "id": "a4",
+                  "name": "endereco",
+                  "value": "={{ $json.endereco }}",
+                  "type": "string"
+                },
+                {
+                  "id": "a5",
+                  "name": "maps_url",
+                  "value": "={{ $json.maps }}",
+                  "type": "string"
+                },
+                {
+                  "id": "a6",
+                  "name": "atualizado_em",
+                  "value": "={{ $now.toISO() }}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "4",
+          "name": "Google Sheets (Upsert)",
+          "type": "n8n-nodes-base.googleSheets",
+          "typeVersion": 4.5,
+          "position": [
+            960,
+            260
+          ],
+          "parameters": {
+            "operation": "appendOrUpdate",
+            "documentId": "COLE_AQUI_O_ID_DA_PLANILHA",
+            "sheetName": "Profissionais",
+            "columns": {
+              "mappingMode": "defineBelow",
+              "value": {
+                "nome": "={{ $json.nome }}",
+                "especialidade": "={{ $json.especialidade }}",
+                "preco_publicado": "={{ $json.preco_publicado }}",
+                "endereco": "={{ $json.endereco }}",
+                "maps_url": "={{ $json.maps_url }}",
+                "atualizado_em": "={{ $json.atualizado_em }}"
+              },
+              "matchingColumns": [
+                "nome"
+              ]
+            }
+          }
+        }
+      ],
+      "connections": {
+        "Agendamento Diário": {
+          "main": [
+            [
+              {
+                "node": "Lista Base (Code)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Lista Base (Code)": {
+          "main": [
+            [
+              {
+                "node": "Normalizar Campos",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Normalizar Campos": {
+          "main": [
+            [
+              {
+                "node": "Google Sheets (Upsert)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POA] Alertar Mudança de Valores",
+      "nodes": [
+        {
+          "id": "10",
+          "name": "Agendamento 1h",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "typeVersion": 1.2,
+          "position": [
+            220,
+            560
+          ],
+          "parameters": {
+            "rule": {
+              "interval": [
+                {
+                  "field": "hours",
+                  "hoursInterval": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "11",
+          "name": "Ler Linhas Atuais",
+          "type": "n8n-nodes-base.googleSheets",
+          "typeVersion": 4.5,
+          "position": [
+            460,
+            560
+          ],
+          "parameters": {
+            "operation": "read",
+            "documentId": "COLE_AQUI_O_ID_DA_PLANILHA",
+            "sheetName": "Profissionais"
+          }
+        },
+        {
+          "id": "12",
+          "name": "Comparar Snapshot",
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [
+            700,
+            560
+          ],
+          "parameters": {
+            "language": "javaScript",
+            "jsCode": "const saida = [];\nfor (const item of items) {\n  const precoAtual = String(item.json.preco_publicado || '').trim();\n  const precoAnterior = String(item.json.preco_anterior || '').trim();\n  if (precoAnterior && precoAtual && precoAnterior !== precoAtual) {\n    saida.push({\n      json: {\n        nome: item.json.nome,\n        preco_anterior: precoAnterior,\n        preco_atual: precoAtual,\n        endereco: item.json.endereco\n      }\n    });\n  }\n}\nreturn saida;"
+          }
+        },
+        {
+          "id": "13",
+          "name": "Slack Alerta",
+          "type": "n8n-nodes-base.slack",
+          "typeVersion": 2.2,
+          "position": [
+            940,
+            560
+          ],
+          "parameters": {
+            "resource": "message",
+            "operation": "post",
+            "channel": "#operacao-nutri-gastro",
+            "text": "=⚠️ Mudança de valor detectada: {{$json.nome}}\nDe: {{$json.preco_anterior}} | Para: {{$json.preco_atual}}\nEndereço: {{$json.endereco}}"
+          }
+        }
+      ],
+      "connections": {
+        "Agendamento 1h": {
+          "main": [
+            [
+              {
+                "node": "Ler Linhas Atuais",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Ler Linhas Atuais": {
+          "main": [
+            [
+              {
+                "node": "Comparar Snapshot",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Comparar Snapshot": {
+          "main": [
+            [
+              {
+                "node": "Slack Alerta",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "[POA] Captura de Lead (Webhook)",
+      "nodes": [
+        {
+          "id": "20",
+          "name": "Webhook Lead",
+          "type": "n8n-nodes-base.webhook",
+          "typeVersion": 2,
+          "position": [
+            220,
+            860
+          ],
+          "parameters": {
+            "httpMethod": "POST",
+            "path": "lead-nutricao-gastro",
+            "responseMode": "lastNode"
+          }
+        },
+        {
+          "id": "21",
+          "name": "Validar Payload",
+          "type": "n8n-nodes-base.set",
+          "typeVersion": 3.4,
+          "position": [
+            460,
+            860
+          ],
+          "parameters": {
+            "assignments": {
+              "assignments": [
+                {
+                  "id": "c1",
+                  "name": "nome",
+                  "value": "={{ $json.body.nome }}",
+                  "type": "string"
+                },
+                {
+                  "id": "c2",
+                  "name": "telefone",
+                  "value": "={{ $json.body.telefone }}",
+                  "type": "string"
+                },
+                {
+                  "id": "c3",
+                  "name": "interesse",
+                  "value": "={{ $json.body.interesse }}",
+                  "type": "string"
+                },
+                {
+                  "id": "c4",
+                  "name": "origem",
+                  "value": "site",
+                  "type": "string"
+                },
+                {
+                  "id": "c5",
+                  "name": "capturado_em",
+                  "value": "={{ $now.toISO() }}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "22",
+          "name": "Salvar Lead (Sheets)",
+          "type": "n8n-nodes-base.googleSheets",
+          "typeVersion": 4.5,
+          "position": [
+            700,
+            860
+          ],
+          "parameters": {
+            "operation": "append",
+            "documentId": "COLE_AQUI_O_ID_DA_PLANILHA",
+            "sheetName": "Leads",
+            "columns": {
+              "mappingMode": "defineBelow",
+              "value": {
+                "nome": "={{ $json.nome }}",
+                "telefone": "={{ $json.telefone }}",
+                "interesse": "={{ $json.interesse }}",
+                "origem": "={{ $json.origem }}",
+                "capturado_em": "={{ $json.capturado_em }}"
+              }
+            }
+          }
+        },
+        {
+          "id": "23",
+          "name": "Notificar Equipe (Slack)",
+          "type": "n8n-nodes-base.slack",
+          "typeVersion": 2.2,
+          "position": [
+            940,
+            860
+          ],
+          "parameters": {
+            "resource": "message",
+            "operation": "post",
+            "channel": "#leads-nutri-gastro",
+            "text": "=📥 Novo lead: {{$json.nome}} | {{$json.telefone}} | Interesse: {{$json.interesse}}"
+          }
+        },
+        {
+          "id": "24",
+          "name": "Resposta 200",
+          "type": "n8n-nodes-base.respondToWebhook",
+          "typeVersion": 1.1,
+          "position": [
+            1160,
+            860
+          ],
+          "parameters": {
+            "respondWith": "json",
+            "responseBody": "={{ { ok: true, mensagem: 'Lead recebido com sucesso' } }}",
+            "options": {
+              "responseCode": 200
+            }
+          }
+        }
+      ],
+      "connections": {
+        "Webhook Lead": {
+          "main": [
+            [
+              {
+                "node": "Validar Payload",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Validar Payload": {
+          "main": [
+            [
+              {
+                "node": "Salvar Lead (Sheets)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Salvar Lead (Sheets)": {
+          "main": [
+            [
+              {
+                "node": "Notificar Equipe (Slack)",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Notificar Equipe (Slack)": {
+          "main": [
+            [
+              {
+                "node": "Resposta 200",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      }
+    }
+  ]
+}

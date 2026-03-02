@@ -14,3 +14,17 @@ Interface web estática para analisar screenshots de candles e sugerir operaçõ
 - Modo Demo para testar sem screenshot.
 - Overlay com níveis de topo, fundo, entrada, stop e alvo.
 - Testes embutidos cobrindo regras estritas e inclusivas.
+
+## Automações n8n (Nutrição & Gastro POA)
+
+Adicionei um pacote pronto de workflows do n8n para automatizar operação de captação e monitoramento:
+
+- `n8n/workflows/nutricao-gastro-automacoes.json`
+- `n8n-processos-nutricao-gastro.md`
+
+Fluxos incluídos:
+1. Sincronização diária da base de profissionais.
+2. Alerta de mudança de valores.
+3. Captura de lead via webhook com envio para planilha + Slack.
+
+Importe o JSON no n8n e configure as credenciais (Google Sheets/Slack).
