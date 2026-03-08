@@ -14,3 +14,15 @@ Interface web estática para analisar screenshots de candles e sugerir operaçõ
 - Modo Demo para testar sem screenshot.
 - Overlay com níveis de topo, fundo, entrada, stop e alvo.
 - Testes embutidos cobrindo regras estritas e inclusivas.
+
+## Novo: Arthur One (assistente virtual com n8n)
+Além do analisador de screenshot, este repositório agora inclui um blueprint de assistente virtual autônomo para uso no celular (iPhone + Siri/Atalhos), com processos automáticos no n8n.
+
+Arquivos principais:
+- `docs/arthur-agent/README.md`: arquitetura, princípios de segurança e instruções de deploy.
+- `n8n/workflows/arthur_oracle_assistant.json`: workflow importável no n8n com:
+  - webhook de voz,
+  - validação de identidade do Arthur,
+  - orquestração de intenção,
+  - resposta estruturada,
+  - briefing automático diário às 07:00.
