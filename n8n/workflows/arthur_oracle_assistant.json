@@ -1,0 +1,272 @@
+{
+  "name": "Arthur One - Assistente Virtual Autônomo",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "arthur/voice",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "WebhookVoice",
+      "name": "Webhook Voice",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.user }}",
+              "operation": "equal",
+              "value2": "Arthur"
+            },
+            {
+              "value1": "={{ $json.body.master_key }}",
+              "operation": "equal",
+              "value2": "={{ $env.ARTHUR_MASTER_KEY }}"
+            }
+          ]
+        }
+      },
+      "id": "IdentityGate",
+      "name": "Validar Arthur",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        430,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "intent",
+              "name": "intent",
+              "type": "string",
+              "value": "={{ $json.body.message && $json.body.message.toLowerCase().includes('foco') ? 'foco' : ($json.body.message && $json.body.message.toLowerCase().includes('agenda') ? 'agenda' : 'geral') }}"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.body.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ClassificarIntencao",
+      "name": "Classificar Intenção",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        660,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const intent = $json.intent || 'geral';\nconst msg = $json.message || '';\nlet action = 'responder';\nif (intent === 'foco') action = 'sugerir_bloco_foco';\nif (intent === 'agenda') action = 'organizar_agenda';\nreturn [{ json: { ...$json, action } }];"
+      },
+      "id": "Orquestrador",
+      "name": "Orquestrador de Ação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        890,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "reply",
+              "name": "reply",
+              "type": "string",
+              "value": "={{ `Arthur, entendi: ${$json.message}. Ação executada: ${$json.action}. Próximo passo: confirmar se deseja execução automática total.` }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "MontarResposta",
+      "name": "Montar Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        1110,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, reply: $json.reply, action: $json.action } }}",
+        "options": {}
+      },
+      "id": "ResponderSucesso",
+      "name": "Responder Sucesso",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        1340,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, error: 'Acesso negado. Apenas Arthur pode comandar este agente.' } }}",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "id": "ResponderNegado",
+      "name": "Responder Negado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "CronBriefing",
+      "name": "Cron Briefing 07h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "briefing",
+              "name": "briefing",
+              "type": "string",
+              "value": "Bom dia, Arthur. Top 3 prioridades: 1) tarefa crítica, 2) bloco de foco de 2h, 3) follow-up estratégico."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "MontarBriefing",
+      "name": "Montar Briefing",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        430,
+        560
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Voice": {
+      "main": [
+        [
+          {
+            "node": "Validar Arthur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Arthur": {
+      "main": [
+        [
+          {
+            "node": "Classificar Intenção",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder Negado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classificar Intenção": {
+      "main": [
+        [
+          {
+            "node": "Orquestrador de Ação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orquestrador de Ação": {
+      "main": [
+        [
+          {
+            "node": "Montar Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Resposta": {
+      "main": [
+        [
+          {
+            "node": "Responder Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron Briefing 07h": {
+      "main": [
+        [
+          {
+            "node": "Montar Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "arthur-one-template"
+  },
+  "active": false,
+  "versionId": "1"
+}
