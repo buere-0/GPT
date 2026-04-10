@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Lead qualification agent.
+Lead qualification agent with Obsidian vault tools.
 
 Reads leads from a CSV file, uses Claude to score/qualify each one,
 and writes a report of qualified leads.
@@ -8,6 +8,7 @@ and writes a report of qualified leads.
 Usage:
     python agent.py --dry-run --max-leads 20   # test without writing output
     python agent.py --max-leads 100            # production run
+    python agent.py --list-obsidian            # list files in Obsidian vault
 """
 
 import argparse
@@ -31,6 +32,116 @@ evaluate their fit and return a JSON object with exactly these fields:
   "suggested_action": "<next step: 'schedule_call', 'send_info', 'nurture', or 'discard'>"
 }
 Respond with only valid JSON, no other text."""
+
+OBSIDIAN_TOOLS = [
+    {
+        "name": "list_obsidian_files",
+        "description": (
+            "List all Markdown (.md) files in the user's Obsidian vault, "
+            "returning their relative paths sorted alphabetically."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "subfolder": {
+                    "type": "string",
+                    "description": (
+                        "Optional subfolder within the vault to list. "
+                        "Leave empty to list the entire vault."
+                    ),
+                },
+            },
+            "required": [],
+        },
+    }
+]
+
+
+def get_vault_path() -> Path:
+    raw = os.getenv("OBSIDIAN_VAULT_PATH", "")
+    if raw:
+        return Path(raw).expanduser()
+    # Common default locations
+    for candidate in [
+        Path.home() / "Documents" / "Obsidian",
+        Path.home() / "Obsidian",
+        Path.home() / "vault",
+    ]:
+        if candidate.is_dir():
+            return candidate
+    return Path.home() / "Documents" / "Obsidian"
+
+
+def list_obsidian_files(subfolder: str = "") -> list[str]:
+    """Return sorted relative paths of all .md files in the vault (or subfolder)."""
+    vault = get_vault_path()
+    search_root = vault / subfolder if subfolder else vault
+
+    if not search_root.exists():
+        raise FileNotFoundError(
+            f"Obsidian vault path not found: {search_root}\n"
+            "Set OBSIDIAN_VAULT_PATH in your .env file."
+        )
+
+    files = sorted(
+        str(p.relative_to(vault))
+        for p in search_root.rglob("*.md")
+        if not any(part.startswith(".") for part in p.parts)
+    )
+    return files
+
+
+def handle_tool_call(tool_name: str, tool_input: dict) -> str:
+    if tool_name == "list_obsidian_files":
+        subfolder = tool_input.get("subfolder", "")
+        try:
+            files = list_obsidian_files(subfolder)
+            if not files:
+                return "No Markdown files found in the vault."
+            return json.dumps({"files": files, "count": len(files)})
+        except FileNotFoundError as e:
+            return json.dumps({"error": str(e)})
+    return json.dumps({"error": f"Unknown tool: {tool_name}"})
+
+
+def run_obsidian_query(client: anthropic.Anthropic, user_question: str) -> None:
+    """Run a Claude agent loop that can call Obsidian tools to answer a question."""
+    messages = [{"role": "user", "content": user_question}]
+
+    while True:
+        response = client.messages.create(
+            model="claude-opus-4-6",
+            max_tokens=1024,
+            tools=OBSIDIAN_TOOLS,
+            messages=messages,
+        )
+
+        # Collect any text output
+        for block in response.content:
+            if block.type == "text":
+                print(block.text)
+
+        if response.stop_reason == "end_turn":
+            break
+
+        if response.stop_reason == "tool_use":
+            # Process all tool calls and feed results back
+            tool_results = []
+            for block in response.content:
+                if block.type == "tool_use":
+                    result = handle_tool_call(block.name, block.input)
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": result,
+                        }
+                    )
+
+            messages.append({"role": "assistant", "content": response.content})
+            messages.append({"role": "user", "content": tool_results})
+        else:
+            break
 
 
 def load_leads(leads_file: str, max_leads: int) -> list[dict]:
@@ -133,8 +244,29 @@ def main() -> None:
         metavar="N",
         help="Maximum number of leads to process (default: 50).",
     )
+    parser.add_argument(
+        "--list-obsidian",
+        action="store_true",
+        help="Ask Claude to list files in your Obsidian vault.",
+    )
+    parser.add_argument(
+        "--obsidian-question",
+        type=str,
+        default="What files are in my Obsidian vault?",
+        metavar="QUESTION",
+        help='Question to ask about your Obsidian vault (default: "What files are in my Obsidian vault?").',
+    )
     args = parser.parse_args()
-    run(dry_run=args.dry_run, max_leads=args.max_leads)
+
+    if args.list_obsidian:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            print("[ERROR] ANTHROPIC_API_KEY not set in environment.", file=sys.stderr)
+            sys.exit(1)
+        client = anthropic.Anthropic(api_key=api_key)
+        run_obsidian_query(client, args.obsidian_question)
+    else:
+        run(dry_run=args.dry_run, max_leads=args.max_leads)
 
 
 if __name__ == "__main__":
