@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout — LeadPilot</title>
+  <style>
+    body { background:#0a0a0f; color:#e8eaf6; font-family:system-ui,sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+    .card { background:#13131f; border:1px solid #1e1e30; border-radius:20px; padding:60px 48px; text-align:center; max-width:520px; }
+    h1 { font-size:28px; font-weight:900; margin-bottom:12px; }
+    p { color:#8888aa; margin-bottom:24px; line-height:1.6; }
+    .price { font-size:48px; font-weight:900; color:#6c63ff; margin:20px 0; }
+    .steps { text-align:left; background:#0a0a0f; border-radius:12px; padding:24px; margin-bottom:28px; }
+    .steps li { padding:8px 0; border-bottom:1px solid #1e1e30; font-size:14px; color:#8888aa; }
+    .steps li:last-child { border:none; }
+    .steps strong { color:#e8eaf6; }
+    a { display:inline-block; background:#6c63ff; color:#fff; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:700; margin-bottom:12px; }
+    .note { font-size:12px; color:#555577; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Complete Your Purchase</h1>
+    <div class="price">
+      {% if plan == 'starter' %}$9{% elif plan == 'pro' %}$29/mo{% else %}$97/mo{% endif %}
+    </div>
+    <p>Stripe is not configured in demo mode. To accept real payments, set your <code>STRIPE_SECRET_KEY</code> and price IDs in your <code>.env</code> file.</p>
+    <div class="steps">
+      <ol>
+        <li><strong>Step 1:</strong> Create account at <code>stripe.com</code></li>
+        <li><strong>Step 2:</strong> Create a Product with a Price</li>
+        <li><strong>Step 3:</strong> Copy your Price ID to <code>STRIPE_PRICE_PRO</code></li>
+        <li><strong>Step 4:</strong> Set <code>STRIPE_SECRET_KEY</code> in .env</li>
+        <li><strong>Step 5:</strong> Restart the app — payments go live instantly</li>
+      </ol>
+    </div>
+    <a href="/">← Back to App</a>
+    <p class="note">This demo checkout page is only shown when Stripe is not configured.</p>
+  </div>
+</body>
+</html>

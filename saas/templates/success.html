@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Successful — LeadPilot</title>
+  <style>
+    body { background:#0a0a0f; color:#e8eaf6; font-family:system-ui,sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+    .card { background:#13131f; border:1px solid #1e1e30; border-radius:20px; padding:60px 48px; text-align:center; max-width:480px; }
+    .icon { font-size:64px; margin-bottom:20px; }
+    h1 { font-size:32px; font-weight:900; margin-bottom:12px; }
+    p { color:#8888aa; margin-bottom:32px; }
+    a { display:inline-block; background:#6c63ff; color:#fff; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🚀</div>
+    <h1>You're In!</h1>
+    <p>Payment confirmed. Your <strong>{{ plan | title }}</strong> plan is active. Upload your leads CSV and start qualifying in seconds.</p>
+    <a href="/">Qualify My Leads →</a>
+  </div>
+</body>
+</html>
