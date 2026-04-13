@@ -1,0 +1,68 @@
+{
+  "name": "Scalp Screenshot Agents",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "scalp-screenshot-agents",
+        "options": {
+          "responseData": "agentResponse"
+        }
+      },
+      "id": "WebhookTrigger",
+      "name": "Entrada HTTP",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const agents = [\n  {\n    id: 'cliente-alpha',\n    displayName: 'Cliente Alpha',\n    briefing: 'Trader iniciante testando sinais por screenshot em gráficos cripto de 1 minuto.'\n  },\n  {\n    id: 'cliente-beta',\n    displayName: 'Cliente Beta',\n    briefing: 'Scalper experiente avaliando ajustes finos de buffer, stop e RR.'\n  },\n  {\n    id: 'cliente-gamma',\n    displayName: 'Cliente Gamma',\n    briefing: 'Usuário focado em automatização e testes embutidos no navegador.'\n  }\n];\n\nconst responsiveAi = {\n  id: 'scalp-ia',\n  displayName: 'IA Responsiva',\n  tone: 'Objetiva, com respostas curtas e ações práticas.'\n};\n\nconst knowledge = {\n  resumo: 'Interface estática para sugerir operações de scalp a partir de screenshots, com modos Manual e Auto.',\n  passos: [\n    'Abrir index.html no navegador desktop.',\n    'Carregar/colar screenshot do gráfico.',\n    'Escolher modo Manual (marca topo/fundo/último preço) ou Auto (beta).',\n    'Ajustar buffer, stop e risco/retorno.',\n    'Executar Analisar e usar Testes para validar regras.'\n  ],\n  destaques: [\n    'Upload, arrastar/soltar e colagem direta de imagens.',\n    'Modo Demo sem necessidade de screenshot.',\n    'Overlay com níveis de topo, fundo, entrada, stop e alvo.',\n    'Testes embutidos cobrindo regras estritas (> / <) e inclusivas (≥ / ≤).'\n  ],\n  manualVsAuto: 'No Manual o usuário marca topo, fundo e último preço; o Auto (beta) estima borda direita e recomenda ESPERA se falhar.'\n};\n\nconst incoming = $json;\nconst agentId = (incoming.agent || '').toLowerCase();\nconst message = (incoming.message || '').toLowerCase();\n\nconst selectedAgent = agents.find(a => a.id === agentId) || agents[0];\n\nlet reply = '';\n\nconst includesAny = (parts) => parts.some(part => message.includes(part));\n\nif (includesAny(['como usar', 'passo', 'instru'])) {\n  reply = `Sou ${responsiveAi.displayName}. Para usar a ferramenta: ${knowledge.passos.map((p, idx) => `${idx + 1}. ${p}`).join(' ')}`;\n} else if (includesAny(['funciona', 'recurso', 'feature', 'capacidade'])) {\n  reply = `Principais recursos: ${knowledge.destaques.join(' | ')}`;\n} else if (includesAny(['manual', 'auto', 'beta'])) {\n  reply = knowledge.manualVsAuto;\n} else if (includesAny(['teste', 'valid'])) {\n  reply = 'Clique em Testes no painel e veja cenários de rompimento estrito e inclusivo direto no navegador.';\n} else if (includesAny(['buffer', 'stop', 'rr', 'alvo'])) {\n  reply = 'O painel permite ajustar buffer de rompimento, stop em pixels e RR (alvo = stop × RR) antes de analisar.';\n} else {\n  reply = `${knowledge.resumo} Compartilhe dúvidas específicas para orientar o próximo passo.`;\n}\n\nreturn [{\n  json: {\n    agentAccount: selectedAgent,\n    aiAccount: responsiveAi,\n    originalMessage: incoming.message || '',\n    agentResponse: reply,\n    knowledgeBase: knowledge\n  }\n}];"
+      },
+      "id": "FunctionRouter",
+      "name": "Lógica de Conversa",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [540, 300]
+    },
+    {
+      "parameters": {
+        "responseBody": "={{$json}}",
+        "responseCode": 200,
+        "options": {}
+      },
+      "id": "WebhookResponse",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [780, 300]
+    }
+  ],
+  "connections": {
+    "Entrada HTTP": {
+      "main": [
+        [
+          {
+            "node": "Lógica de Conversa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lógica de Conversa": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "ScalpScreenshotAgents"
+}
