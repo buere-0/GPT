@@ -3,404 +3,876 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sinais por Screenshot — Compra/Venda (1m)</title>
+  <title>Planilha Interativa • Meu GPT</title>
   <style>
-    :root{--bg:#0b0d10;--panel:#11141a;--line:#2a2f3a;--txt:#e8eef6;--muted:#9aa8b5;--green:#24c26a;--red:#ff4d4f;--yellow:#ffd166}
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell}
-    header{padding:16px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0f1318,#0b0d10)}
-    h1{font-size:18px;margin:0}
-    main{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-    .card header{padding:12px 14px;border-bottom:1px solid var(--line);background:#0e1217}
-    .card header h2{font-size:14px;margin:0;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
-    .card .content{padding:14px}
-    label{display:block;margin:10px 0 6px;color:var(--muted);font-size:13px}
-    input[type=file], select, input[type=number]{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0f1318;color:var(--txt)}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#121722;color:var(--txt);cursor:pointer}
-    .btn:hover{background:#151b26}
-    .btn.primary{background:var(--green);color:#062b17;border-color:#1fa65b;font-weight:600}
-    .actions{display:flex;gap:8px;flex-wrap:wrap}
-    .drop{border:1.5px dashed var(--line);border-radius:12px;padding:8px;text-align:center;color:var(--muted);font-size:12px;margin:8px 0}
-    canvas{max-width:100%;width:100%;display:block;background:#0a0c10;border-radius:12px}
-    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);color:var(--muted)}
-    .out{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0a0e12;border:1px solid var(--line);padding:12px;border-radius:10px;white-space:pre-wrap}
-    .legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
-    .dot{width:10px;height:10px;border-radius:2px;display:inline-block}
-    .dot.green{background:var(--green)} .dot.red{background:var(--red)} .dot.yellow{background:var(--yellow)} .dot.blue{background:#52a7ff}
-    .muted{color:var(--muted)}
-    footer{padding:12px 16px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
-    .pill{padding:4px 8px;border-radius:8px;background:#0f141b;border:1px solid var(--line)}
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d10;
+      --panel: #11141a;
+      --panel-strong: #151a22;
+      --line: #232a35;
+      --line-strong: #3b4556;
+      --txt: #e8eef6;
+      --muted: #94a3b8;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.16);
+      --accent-strong: #6366f1;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warn: #facc15;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #121623, #080a0f 55%);
+      color: var(--txt);
+      font: 15px/1.5 "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 18px 22px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(120deg, rgba(79,70,229,0.26), rgba(14,19,31,0.85));
+      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.04);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      max-width: 640px;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) 1fr;
+      gap: 18px;
+      padding: 20px;
+    }
+
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .card header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-strong);
+      font-size: 13px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .card .content {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #0f141d;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--txt);
+      font: inherit;
+      transition: border-color .2s ease;
+    }
+
+    input[type="text"]:focus, textarea:focus, select:focus {
+      border-color: var(--accent-strong);
+      outline: none;
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .row {
+      display: grid;
+      gap: 12px;
+    }
+
+    .row.two { grid-template-columns: 1fr 1fr; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 600;
+      background: #151b27;
+      color: var(--txt);
+      border: 1px solid var(--line);
+      cursor: pointer;
+      transition: transform .1s ease, background .2s ease, border-color .2s ease;
+    }
+
+    .btn:hover { background: #192133; border-color: var(--line-strong); }
+    .btn:active { transform: translateY(1px); }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent-strong);
+      color: #f5f3ff;
+      box-shadow: 0 6px 16px rgba(99,102,241,0.25);
+    }
+
+    .btn.primary:hover { background: var(--accent-strong); }
+
+    .btn.danger {
+      background: rgba(239,68,68,0.12);
+      border-color: rgba(239,68,68,0.35);
+      color: #fecaca;
+    }
+
+    .btn.danger:hover { background: rgba(239,68,68,0.24); }
+
+    .btn.inline {
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .btn[disabled] {
+      opacity: .5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(15,19,31,0.6);
+      color: var(--muted);
+    }
+
+    .status {
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #0f141d;
+      border: 1px solid var(--line);
+      min-height: 48px;
+      white-space: pre-wrap;
+    }
+
+    .status.loading::before {
+      content: "";
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 2px solid rgba(99,102,241,0.45);
+      border-right-color: transparent;
+      margin-right: 8px;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .sheet-wrapper {
+      padding: 18px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .sheet-scroll {
+      flex: 1;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #090d14;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    table.sheet {
+      width: max(100%, 560px);
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 14px;
+    }
+
+    table.sheet thead th {
+      position: sticky;
+      top: 0;
+      background: #101725;
+      z-index: 3;
+      border-bottom: 1px solid var(--line-strong);
+      text-align: center;
+      padding: 8px 12px;
+      font-weight: 600;
+      color: var(--muted);
+      backdrop-filter: blur(6px);
+    }
+
+    table.sheet th:first-child { left: 0; z-index: 4; }
+
+    table.sheet tbody th {
+      position: sticky;
+      left: 0;
+      width: 42px;
+      text-align: right;
+      padding: 8px 10px;
+      font-weight: 500;
+      background: #101725;
+      color: var(--muted);
+      border-right: 1px solid var(--line);
+    }
+
+    table.sheet td {
+      border-right: 1px solid rgba(32,40,54,0.9);
+      border-bottom: 1px solid rgba(32,40,54,0.9);
+      min-width: 110px;
+      max-width: 220px;
+      padding: 6px 10px;
+      background: rgba(14,20,31,0.66);
+      color: var(--txt);
+      position: relative;
+    }
+
+    table.sheet td:last-child { border-right: none; }
+    table.sheet tr:last-child td { border-bottom: none; }
+
+    table.sheet td:focus-within {
+      outline: 2px solid var(--accent-strong);
+      outline-offset: -2px;
+      z-index: 2;
+    }
+
+    .cell {
+      width: 100%;
+      min-height: 24px;
+      outline: none;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      caret-color: var(--accent-strong);
+    }
+
+    .cell::placeholder { color: rgba(148,163,184,0.4); }
+
+    .cell.selected,
+    table.sheet td.selected { background: rgba(99,102,241,0.18); }
+
+    table.sheet td.anchor { box-shadow: inset 0 0 0 2px var(--accent-strong); }
+
+    .helper-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .helper-bar strong { color: #cbd5f5; }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      background: rgba(99,102,241,0.18);
+      color: var(--accent-strong);
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Scalp por Screenshot — DOGE/qualquer par (leitura rápida do gráfico)</h1>
+    <h1>Planilha Inteligente com Meu GPT</h1>
+    <p>Construa uma planilha colaborativa e peça para o GPT preencher, transformar ou sintetizar dados direto das células selecionadas. Seus dados ficam no navegador.</p>
   </header>
+
   <main>
-    <!-- Painel esquerdo: Controles -->
     <section class="card">
-      <header><h2>Entrada</h2></header>
+      <header>Assistente</header>
       <div class="content">
-        <label>Imagem do gráfico (screenshot do candle)</label>
-        <input id="file" type="file" accept="image/*" capture="environment" />
-        <div class="drop" id="dropZone">Arrasta & solta a imagem aqui, ou <b>cola (Ctrl/⌘+V)</b> um print</div>
-        <div class="muted">Dica: use screenshot limpo (sem DOM/livro) e com a coluna de preços visível na direita.</div>
-        <div style="height:12px"></div>
-        <div class="row">
+        <div>
+          <label for="apiKey">Chave da API OpenAI</label>
+          <input id="apiKey" type="text" placeholder="sk-..." autocomplete="off" />
+          <div class="helper-bar" style="margin-top:6px">
+            <span class="badge">Dica</span>
+            <span>A chave nunca sai do seu navegador. Você pode limpar no botão "Esquecer".</span>
+          </div>
+          <div class="actions" style="margin-top:10px">
+            <button class="btn inline" id="saveKeyBtn">Salvar</button>
+            <button class="btn inline" id="forgetKeyBtn">Esquecer</button>
+          </div>
+        </div>
+
+        <div>
+          <label for="prompt">Instruções para o GPT</label>
+          <textarea id="prompt" placeholder="Ex: Gere um plano semanal de estudos com foco em matemática e ciências." spellcheck="false"></textarea>
+        </div>
+
+        <div class="row two">
           <div>
-            <label>Modo</label>
-            <select id="mode">
-              <option value="manual" selected>Manual (confiável)</option>
-              <option value="auto">Auto (beta)</option>
+            <label for="temperature">Temperatura</label>
+            <select id="temperature">
+              <option value="0">0 • determinístico</option>
+              <option value="0.2" selected>0.2</option>
+              <option value="0.5">0.5</option>
+              <option value="0.8">0.8</option>
+              <option value="1">1.0</option>
             </select>
           </div>
           <div>
-            <label>Buffer de rompimento (px)</label>
-            <input id="buffer" type="number" step="1" value="6" />
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label>Regra de limite (rompimento)</label>
-            <select id="boundaryMode">
-              <option value="strict" selected>Estrita (apenas &gt; / &lt;)</option>
-              <option value="inclusive">Inclusiva (&ge; / &le;)</option>
+            <label for="model">Modelo</label>
+            <select id="model">
+              <option value="gpt-4o-mini" selected>gpt-4o-mini</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-4.1-mini">gpt-4.1-mini</option>
             </select>
           </div>
-          <div></div>
         </div>
-        <div class="row">
-          <div>
-            <label>Stop (px)</label>
-            <input id="stopPx" type="number" step="1" value="18" />
-          </div>
-          <div>
-            <label>RR (alvo = stop × RR)</label>
-            <input id="rr" type="number" step="0.1" value="1.5" />
-          </div>
+
+        <div class="actions">
+          <button class="btn primary" id="generateBtn">Preencher seleção com GPT</button>
+          <button class="btn" id="explainBtn">Explicar seleção</button>
         </div>
-        <div class="actions" style="margin-top:10px">
-          <button class="btn primary" id="analyzeBtn" disabled>Analisar</button>
-          <button class="btn" id="resetBtn">Limpar</button>
-          <button class="btn" id="demoBtn">Demo</button>
-          <button class="btn" id="testBtn">Testes</button>
+
+        <div>
+          <div class="pill">Fluxo sugerido</div>
+          <ol style="margin:10px 0 0 18px; color: var(--muted); line-height:1.6">
+            <li>Clique e arraste para selecionar um bloco de células.</li>
+            <li>Descreva o que deseja gerar no prompt.</li>
+            <li>Pressione <strong>Preencher</strong> para que o GPT escreva no intervalo.</li>
+            <li>Use <strong>Explicar</strong> para gerar um resumo textual da seleção.</li>
+          </ol>
         </div>
-        <div class="legend">
-          <span class="pill"><span class="dot blue"></span> Topo/Fundo (range)</span>
-          <span class="pill"><span class="dot yellow"></span> Entrada</span>
-          <span class="pill"><span class="dot green"></span> Alvo</span>
-          <span class="pill"><span class="dot red"></span> Stop</span>
-        </div>
-        <div style="margin-top:10px" class="muted">
-          <b>Manual:</b> clique na imagem em <i>Topo do range</i>, <i>Fundo do range</i> e <i>Último preço</i> (3 cliques).<br>
-          <b>Auto (beta):</b> tenta estimar topo/fundo e último preço pela borda direita do gráfico. Se não achar, usa fallback e recomenda "ESPERA".
+
+        <div>
+          <label>Status</label>
+          <div id="status" class="status">Selecione algumas células para começar.</div>
         </div>
       </div>
     </section>
 
-    <!-- Painel direito: Prévia + Resultado -->
-    <section class="card" style="display:grid;grid-template-rows:auto 1fr auto">
-      <header><h2>Prévia</h2></header>
-      <div class="content">
-        <canvas id="canvas" width="1200" height="700"></canvas>
+    <section class="card" style="min-height:0">
+      <header>Planilha</header>
+      <div class="sheet-wrapper">
+        <div class="helper-bar">
+          <strong id="selectionLabel">Nada selecionado</strong>
+          <span id="dimensions"></span>
+          <span style="flex:1"></span>
+          <button class="btn inline" id="addRowBtn">+ Linha</button>
+          <button class="btn inline" id="addColBtn">+ Coluna</button>
+          <button class="btn inline" id="clearSelectionBtn">Limpar seleção</button>
+          <button class="btn inline danger" id="clearSheetBtn">Limpar planilha</button>
+        </div>
+        <div class="sheet-scroll">
+          <table class="sheet" id="sheet"></table>
+        </div>
       </div>
-      <footer>
-        <div id="result" class="out">Carrega/cola/arrasta uma imagem, clica <b>Analisar</b>. No modo Manual, marca 3 pontos: Topo → Fundo → Último preço.</div>
-      </footer>
     </section>
   </main>
 
   <script>
-    // ====== Elements ======
-    const fileEl = document.getElementById('file');
-    const dropZone = document.getElementById('dropZone');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const modeEl = document.getElementById('mode');
-    const bufferEl = document.getElementById('buffer');
-    const stopPxEl = document.getElementById('stopPx');
-    const rrEl = document.getElementById('rr');
-    const boundaryModeEl = document.getElementById('boundaryMode');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const demoBtn = document.getElementById('demoBtn');
-    const testBtn = document.getElementById('testBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const resultEl = document.getElementById('result');
+    const ROWS_DEFAULT = 12;
+    const COLS_DEFAULT = 6;
+    const STORAGE_KEY = 'gpt-sheet-data-v1';
+    const STORAGE_KEY_KEY = 'gpt-sheet-api-key';
 
-    // ====== State ======
-    let img = new Image();
-    let imgReady = false;      // TRUE somente quando onload disparou com sucesso
-    let sceneReady = false;    // TRUE quando há algo válido no canvas (imagem OU demo)
-    let manualPoints = [];     // [top, bottom, last]
+    const sheetEl = document.getElementById('sheet');
+    const statusEl = document.getElementById('status');
+    const apiKeyEl = document.getElementById('apiKey');
+    const promptEl = document.getElementById('prompt');
+    const temperatureEl = document.getElementById('temperature');
+    const modelEl = document.getElementById('model');
+    const selectionLabelEl = document.getElementById('selectionLabel');
+    const dimensionsEl = document.getElementById('dimensions');
 
-    // ====== Utils ======
-    function setMsg(txt){ resultEl.textContent = txt; }
-    function showHTML(html){ resultEl.innerHTML = html; }
+    const generateBtn = document.getElementById('generateBtn');
+    const explainBtn = document.getElementById('explainBtn');
+    const addRowBtn = document.getElementById('addRowBtn');
+    const addColBtn = document.getElementById('addColBtn');
+    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+    const clearSheetBtn = document.getElementById('clearSheetBtn');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const forgetKeyBtn = document.getElementById('forgetKeyBtn');
 
-    function safeDrawImage(i, x, y, w, h){
-      // desenha só se a imagem estiver OK e completamente carregada
-      if(!i) return;
-      if(!i.complete) return;           // ainda carregando
-      // width/height == 0 é indício de estado "broken" em alguns navegadores
-      if(!(i.naturalWidth>0 && i.naturalHeight>0)) return;
-      ctx.drawImage(i, x, y, w, h);
-    }
+    let data = [];
+    let selectedRange = null; // {startRow, endRow, startCol, endCol}
+    let anchorCell = null;
+    let isSelecting = false;
 
-    function loadBlobToImage(blob){
-      try{
-        const url = URL.createObjectURL(blob);
-        imgReady = false; sceneReady = false; analyzeBtn.disabled = true;
-        manualPoints = [];
-        img = new Image();
-        img.onload = () => {
-          try{
-            URL.revokeObjectURL(url);
-          }catch(_){/*noop*/}
-          imgReady = true; sceneReady = true;
-          const maxW = canvas.width, maxH = canvas.height;
-          const ratio = Math.min(maxW/img.width, maxH/img.height);
-          const w = Math.max(1, img.width * ratio);
-          const h = Math.max(1, img.height * ratio);
-          const x = (canvas.width - w)/2; const y = (canvas.height - h)/2;
-          ctx.clearRect(0,0,canvas.width,canvas.height);
-          safeDrawImage(img, x, y, w, h);
-          canvas._imgRect = {x, y, w, h};
-          drawOverlay();
-          analyzeBtn.disabled = false;
-          setMsg('Imagem carregada. (Manual: clique Topo → Fundo → Último preço).');
-        };
-        img.onerror = () => {
-          try{ URL.revokeObjectURL(url); }catch(_){/*noop*/}
-          imgReady = false; sceneReady = false; analyzeBtn.disabled = true;
-          setMsg('Falha ao carregar a imagem. Salva o arquivo e tenta novamente.');
-        };
-        img.src = url;
-      }catch(err){
-        imgReady = false; sceneReady = false; analyzeBtn.disabled = true;
-        setMsg('Erro ao preparar imagem: '+(err?.message||err));
-      }
-    }
-
-    function handleFile(f){
-      if(!f){ setMsg('Nenhum arquivo.'); return; }
-      if(!f.type || !f.type.startsWith('image/')){ setMsg('Arquivo não é imagem.'); return; }
-      loadBlobToImage(f);
-    }
-
-    // ====== Inputs ======
-    fileEl.addEventListener('change', (e)=> handleFile(e.target.files && e.target.files[0]));
-
-    // Drag & drop visuals
-    ['dragenter','dragover'].forEach(ev=> dropZone.addEventListener(ev, e=>{ e.preventDefault(); dropZone.style.borderColor = '#52a7ff'; }));
-    ['dragleave','drop'].forEach(ev=> dropZone.addEventListener(ev, e=>{ e.preventDefault(); dropZone.style.borderColor = 'var(--line)'; }));
-
-    // DROP handler (sem parêntese extra; robusto a link vs arquivo)
-    dropZone.addEventListener('drop', e => {
-      const dt = e.dataTransfer;
-      if(dt && dt.files && dt.files.length){ handleFile(dt.files[0]); return; }
-      const url = dt && (dt.getData('text/uri-list') || dt.getData('text/plain'));
-      if(url){ setMsg('Recebi um LINK, não um arquivo. Salva a imagem no PC e arrasta o ARQUIVO aqui, ou usa Ctrl/⌘+V.'); return; }
-      setMsg('Nada para processar no drop.');
-    });
-
-    // Paste (Ctrl/⌘+V)
-    document.addEventListener('paste', (e)=>{
-      const items = e.clipboardData && e.clipboardData.items;
-      if(!items){ setMsg('Sem acesso ao clipboard. Seleciona arquivo.'); return; }
-      for(const it of items){
-        if(it.type && it.type.startsWith('image/')){ const blob = it.getAsFile(); handleFile(blob); return; }
-      }
-      setMsg('Nada de imagem na área de transferência. Copia a imagem ou salva o arquivo.');
-    });
-
-    // Clique manual no canvas
-    canvas.addEventListener('click', (e)=>{
-      if(!sceneReady || modeEl.value !== 'manual') return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left; const y = e.clientY - rect.top;
-      if(manualPoints.length < 3){
-        manualPoints.push({x,y});
-        drawOverlay();
-        const labels = ['Topo do range','Fundo do range','Último preço'];
-        setMsg(`Marcado: ${labels[manualPoints.length-1]} (${x|0}, ${y|0}).`);
-        if(manualPoints.length === 3){ analyze(); }
-      }
-    });
-
-    resetBtn.addEventListener('click', ()=>{
-      if(!sceneReady) return;
-      manualPoints = [];
-      drawOverlay();
-      setMsg('Limpo. Clique novamente (Topo → Fundo → Último preço).');
-    });
-
-    analyzeBtn.addEventListener('click', analyze);
-
-    // DEMO: desenha um gráfico sintético para testar sem imagem
-    demoBtn.addEventListener('click', ()=>{
-      imgReady = false;       // não há imagem HTML válida nesta cena
-      sceneReady = true;
-      analyzeBtn.disabled = false;
-      const r = {x:80, y:40, w: canvas.width-160, h: canvas.height-160};
-      canvas._imgRect = r;
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      // fundo
-      ctx.fillStyle = '#0d1117'; ctx.fillRect(r.x, r.y, r.w, r.h);
-      // eixo preço
-      ctx.strokeStyle = '#2a2f3a'; ctx.lineWidth = 1;
-      for(let i=0;i<=10;i++){ let yy=r.y + (i/10)*r.h; ctx.beginPath(); ctx.moveTo(r.x,yy); ctx.lineTo(r.x+r.w,yy); ctx.stroke(); }
-      // velas
-      const N=90, cw=Math.floor(r.w/N); let y=r.y+r.h*0.6; let seed=1;
-      function rnd(){ seed=(seed*9301+49297)%233280; return seed/233280; }
-      for(let i=0;i<N;i++){
-        const x=r.x+i*cw+1;
-        const d=(rnd()-0.45)*(r.h*0.06);
-        const open=y; y = Math.max(r.y+5, Math.min(r.y+r.h-5, y-d));
-        const close=y; const hi=Math.min(open,close)-Math.abs(d)*0.6; const lo=Math.max(open,close)+Math.abs(d)*0.6;
-        ctx.strokeStyle = '#3b82f6'; ctx.beginPath(); ctx.moveTo(x+cw/2, hi); ctx.lineTo(x+cw/2, lo); ctx.stroke();
-        ctx.fillStyle = close<open ? '#22c55e' : '#ef4444';
-        const top=Math.min(open,close), bot=Math.max(open,close);
-        ctx.fillRect(x, top, cw-2, Math.max(1, bot-top));
-      }
-      manualPoints = [];
-      setMsg('DEMO pronto. Modo Manual: clique Topo → Fundo → Último preço, ou mude para Auto e clique Analisar.');
-    });
-
-    // ====== Lógica de decisão (pura) + Testes ======
-    function decideSide(topY, botY, lastY, buffer, boundaryMode){
-      // y menor = preço mais alto; y maior = preço mais baixo
-      const inclusive = boundaryMode === 'inclusive';
-      if(inclusive){
-        if(lastY <= (topY - buffer)) return 'COMPRA';
-        if(lastY >= (botY + buffer)) return 'VENDA';
-        return 'ESPERA';
-      } else {
-        if(lastY < (topY - buffer)) return 'COMPRA';
-        if(lastY > (botY + buffer)) return 'VENDA';
-        return 'ESPERA';
-      }
-    }
-
-    testBtn.addEventListener('click', ()=>{
-      const cases = [
-        {name:'Breakout topo', topY:200, botY:600, lastY:180, buffer:10, want:'COMPRA'},
-        {name:'Breakdown fundo', topY:200, botY:600, lastY:620, buffer:10, want:'VENDA'},
-        {name:'Dentro do range', topY:200, botY:600, lastY:400, buffer:10, want:'ESPERA'},
-        {name:'Limite superior sem buffer', topY:200, botY:600, lastY:191, buffer:-5, want:'COMPRA'},
-        {name:'Limite inferior com buffer grande', topY:200, botY:600, lastY:610, buffer:20, want:'ESPERA'},
-        // Casos adicionais (empate no limite) — regra ESTRITA espera ESPERA
-        {name:'Empate topo (==) [estrita]', topY:200, botY:600, lastY:190, buffer:10, want:'ESPERA'},
-        {name:'Empate fundo (==) [estrita]', topY:200, botY:600, lastY:610, buffer:10, want:'ESPERA'},
-        // Casos para regra INCLUSIVA — esperamos rompimento
-        {name:'Empate topo (==) [inclusiva → COMPRA]', topY:200, botY:600, lastY:190, buffer:10, want:'COMPRA', mode:'inclusive'},
-        {name:'Empate fundo (==) [inclusiva → VENDA]', topY:200, botY:600, lastY:610, buffer:10, want:'VENDA', mode:'inclusive'},
-      ];
-      const results = cases.map(c=>{
-        const got = decideSide(c.topY,c.botY,c.lastY,c.buffer, c.mode||'strict');
-        return `${c.name}: ${got===c.want?'PASS':'FAIL'} (got=${got}, want=${c.want})`;
-      }).join('\n');
-      showHTML(`<div class="out">${results.replaceAll('\n','<br>')}</div>`);
-      console.log(results);
-    });
-
-    // ====== Análise visual ======
-    function analyze(){
-      try{
-        if(!sceneReady){ setMsg('Carrega uma imagem (ou usa DEMO) primeiro.'); return; }
-        const buffer = parseFloat(bufferEl.value)||6;
-        const stopPx = parseFloat(stopPxEl.value)||18;
-        const rr = parseFloat(rrEl.value)||1.5;
-
-        let topY, botY, lastY;
-        if(modeEl.value === 'manual'){
-          if(manualPoints.length < 3){ setMsg('Marca 3 pontos: Topo → Fundo → Último preço.'); return; }
-          topY = manualPoints[0].y; botY = manualPoints[1].y; lastY = manualPoints[2].y;
-        } else {
-          const r = canvas._imgRect; if(!r){ setMsg('Imagem não renderizada. Tenta de novo.'); return; }
-          const x0 = Math.floor(r.x + r.w*0.88), x1 = Math.min(canvas.width-1, Math.floor(r.x + r.w*0.98));
-          const y0 = Math.floor(r.y + r.h*0.05), y1 = Math.floor(r.y + r.h*0.95);
-          if(x1<=x0 || y1<=y0){ setMsg('Recorte inválido. Usa Modo Manual.'); return; }
-          const data = ctx.getImageData(x0, y0, Math.max(1,x1-x0), Math.max(1,y1-y0));
-          let minY = y1, maxY = y0; let bright = [];
-          for(let yy=0; yy<data.height; yy++){
-            for(let xx=0; xx<data.width; xx++){
-              const idx=(yy*data.width+xx)*4; const rpx=data.data[idx], gpx=data.data[idx+1], bpx=data.data[idx+2];
-              const lum = 0.2126*rpx + 0.7152*gpx + 0.0722*bpx;
-              if(lum > 210) bright.push(y0+yy);
-              if(y0+yy < minY) minY = y0+yy;
-              if(y0+yy > maxY) maxY = y0+yy;
-            }
-          }
-          topY = minY + 10; botY = maxY - 10;
-          if(topY > botY){ const t = topY; topY = botY; botY = t; }
-          lastY = bright.length ? bright.sort((a,b)=>a-b)[Math.floor(bright.length/2)] : Math.round(r.y + r.h*0.5);
-        }
-
-        drawOverlay();
-        const entryColor='#ffd166', tgtColor=getCss('--green'), stopColor=getCss('--red');
-        const topColor='#52a7ff', botColor='#52a7ff';
-        drawHLine(topY, topColor, 1.5); drawHLine(botY, botColor, 1.5); drawHLine(lastY, entryColor, 1.5);
-
-        const boundaryMode = boundaryModeEl.value;
-        const side = decideSide(topY, botY, lastY, buffer, boundaryMode);
-        let entryY=lastY, stopY, tgtY, note='Sem rompimento válido (dentro do range).';
-        if(side==='COMPRA'){ stopY=entryY+stopPx; tgtY=entryY-stopPx*rr; note='Rompimento de topo com buffer.'; }
-        else if(side==='VENDA'){ stopY=entryY-stopPx; tgtY=entryY+stopPx*rr; note='Rompimento de fundo com buffer.'; }
-        if(side!=='ESPERA'){ drawHLine(stopY, stopColor, 1.5, [6,6]); drawHLine(tgtY, tgtColor, 1.5, [6,6]); }
-
-        const msg = renderMsg({side, topY, botY, lastY, buffer, stopPx, rr, note, boundaryMode});
-        showHTML(msg);
-      } catch(err){
-        setMsg('Erro ao analisar: '+ (err?.message||err));
-        console.error(err);
-      }
-    }
-
-    // ====== Desenho ======
-    function drawOverlay(){
-      const r = canvas._imgRect; if(!r) return;
-      // Não chame drawImage se a imagem ainda não está pronta — evita InvalidStateError
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      if(imgReady){ safeDrawImage(img, r.x, r.y, r.w, r.h); }
-      // pontos manuais
-      if(manualPoints.length){
-        manualPoints.forEach((p,i)=>{
-          ctx.fillStyle = ['#52a7ff','#52a7ff','#ffd166'][i] || '#999';
-          ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.rect(p.x-4,p.y-4,8,8); ctx.fill(); ctx.stroke();
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) throw new Error('sem cache');
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed?.data)) throw new Error('formato inválido');
+        const rows = parsed.rows ?? parsed.data.length;
+        const cols = parsed.cols ?? (parsed.data[0]?.length || COLS_DEFAULT);
+        data = Array.from({ length: rows }, (_, r) => {
+          return Array.from({ length: cols }, (_, c) => parsed.data?.[r]?.[c] ?? '');
         });
+      } catch (_) {
+        data = Array.from({ length: ROWS_DEFAULT }, () => Array(COLS_DEFAULT).fill(''));
       }
     }
 
-    function drawHLine(y,color,width=1,dash=null){
-      const r = canvas._imgRect; if(!r) return;
-      ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=width; if(dash) ctx.setLineDash(dash);
-      ctx.beginPath(); ctx.moveTo(r.x, y); ctx.lineTo(r.x+r.w, y); ctx.stroke(); ctx.restore();
+    function saveData() {
+      try {
+        const payload = { rows: data.length, cols: data[0]?.length || 0, data };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {
+        console.warn('Falha ao salvar dados:', err);
+      }
     }
 
-    function getCss(name){
-      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    function loadApiKey() {
+      try {
+        const key = localStorage.getItem(STORAGE_KEY_KEY);
+        if (key) apiKeyEl.value = key;
+      } catch (_) {}
     }
 
-    function renderMsg({side, topY, botY, lastY, buffer, stopPx, rr, note, boundaryMode}){
-      const badge = side==='COMPRA' ? `<span class="badge" style="background:var(--green);color:#062b17;border-color:#1fa65b">COMPRA</span>` : side==='VENDA' ? `<span class="badge" style="background:var(--red);color:#ffe8ea;border-color:#7a2a33">VENDA</span>` : `<span class="badge" style="background:#2a2f3a;color:#cdd6df;border-color:#3b4250">ESPERA</span>`;
-      const inclusive = boundaryMode === 'inclusive';
-      const modeTxt = inclusive ? 'Inclusiva (&ge; / &le;)' : 'Estrita (&gt; / &lt;)';
-      const topComparison = inclusive ? '&le;' : '&lt;';
-      const bottomComparison = inclusive ? '&ge;' : '&gt;';
-      const lines = [
-        badge,
-        '',
-        `Range (px): topo=${topY|0} • fundo=${botY|0}`,
-        `Último preço (px): ${lastY|0}`,
-        `Buffer: ${buffer}px  •  Stop: ${stopPx}px  •  RR: ${rr}x  •  Regra: ${modeTxt}`,
-        '',
-        `Regra: rompeu topo (y ${topComparison} topo - buffer) → COMPRA | rompeu fundo (y ${bottomComparison} fundo + buffer) → VENDA.`,
-        `Motivo: ${note}`
-      ];
-      return lines.join('<br>');
+    function saveApiKey() {
+      const key = apiKeyEl.value.trim();
+      if (!key) {
+        setStatus('Forneça uma chave antes de salvar.');
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY_KEY, key);
+      setStatus('Chave salva com sucesso neste navegador.');
     }
+
+    function forgetApiKey() {
+      localStorage.removeItem(STORAGE_KEY_KEY);
+      apiKeyEl.value = '';
+      setStatus('Chave removida deste navegador.');
+    }
+
+    function renderSheet() {
+      const rows = data.length;
+      const cols = data[0]?.length || 0;
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      headRow.appendChild(document.createElement('th'));
+      for (let c = 0; c < cols; c++) {
+        const th = document.createElement('th');
+        th.textContent = columnName(c);
+        if (selectedRange && c >= selectedRange.startCol && c <= selectedRange.endCol) {
+          th.style.background = 'rgba(99,102,241,0.32)';
+          th.style.color = '#e0e7ff';
+        }
+        headRow.appendChild(th);
+      }
+      thead.appendChild(headRow);
+
+      const tbody = document.createElement('tbody');
+      for (let r = 0; r < rows; r++) {
+        const tr = document.createElement('tr');
+        const rowTh = document.createElement('th');
+        rowTh.textContent = r + 1;
+        if (selectedRange && r >= selectedRange.startRow && r <= selectedRange.endRow) {
+          rowTh.style.background = 'rgba(99,102,241,0.32)';
+          rowTh.style.color = '#e0e7ff';
+        }
+        tr.appendChild(rowTh);
+        for (let c = 0; c < cols; c++) {
+          const td = document.createElement('td');
+          const div = document.createElement('div');
+          div.className = 'cell';
+          div.contentEditable = 'true';
+          div.dataset.row = r;
+          div.dataset.col = c;
+          div.textContent = data[r][c] ?? '';
+          if (selectedRange && r >= selectedRange.startRow && r <= selectedRange.endRow && c >= selectedRange.startCol && c <= selectedRange.endCol) {
+            td.classList.add('selected');
+            div.classList.add('selected');
+          }
+          if (anchorCell && anchorCell.row === r && anchorCell.col === c) {
+            td.classList.add('anchor');
+          }
+          td.appendChild(div);
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+
+      sheetEl.innerHTML = '';
+      sheetEl.appendChild(thead);
+      sheetEl.appendChild(tbody);
+    }
+
+    function columnName(index) {
+      let name = '';
+      let n = index;
+      do {
+        name = String.fromCharCode(65 + (n % 26)) + name;
+        n = Math.floor(n / 26) - 1;
+      } while (n >= 0);
+      return name;
+    }
+
+    function handleInput(e) {
+      const cell = e.target;
+      if (!cell.classList.contains('cell')) return;
+      const row = Number(cell.dataset.row);
+      const col = Number(cell.dataset.col);
+      if (Number.isInteger(row) && Number.isInteger(col)) {
+        data[row][col] = cell.textContent;
+        saveData();
+      }
+    }
+
+    function setStatus(message, opts = {}) {
+      statusEl.textContent = message;
+      statusEl.classList.toggle('loading', !!opts.loading);
+    }
+
+    function normalizeRange(a, b) {
+      return {
+        startRow: Math.min(a.row, b.row),
+        endRow: Math.max(a.row, b.row),
+        startCol: Math.min(a.col, b.col),
+        endCol: Math.max(a.col, b.col),
+      };
+    }
+
+    function updateSelection(range) {
+      selectedRange = range;
+      if (!range) {
+        selectionLabelEl.textContent = 'Nada selecionado';
+        dimensionsEl.textContent = '';
+      } else {
+        const rows = range.endRow - range.startRow + 1;
+        const cols = range.endCol - range.startCol + 1;
+        selectionLabelEl.textContent = `Selecionado: ${columnName(range.startCol)}${range.startRow + 1} → ${columnName(range.endCol)}${range.endRow + 1}`;
+        dimensionsEl.textContent = `${rows} linha(s) × ${cols} coluna(s)`;
+      }
+      renderSheet();
+    }
+
+    function cellFromEvent(e) {
+      const target = e.target.closest('.cell');
+      if (!target) return null;
+      const row = Number(target.dataset.row);
+      const col = Number(target.dataset.col);
+      if (!Number.isInteger(row) || !Number.isInteger(col)) return null;
+      return { row, col };
+    }
+
+    sheetEl.addEventListener('pointerdown', (e) => {
+      const cell = cellFromEvent(e);
+      if (!cell) return;
+      isSelecting = true;
+      anchorCell = cell;
+      updateSelection(normalizeRange(cell, cell));
+    });
+
+    sheetEl.addEventListener('pointerenter', (e) => {
+      if (!isSelecting) return;
+      if (!(e.buttons & 1)) return;
+      const cell = cellFromEvent(e);
+      if (!cell || !anchorCell) return;
+      updateSelection(normalizeRange(anchorCell, cell));
+    }, true);
+
+    sheetEl.addEventListener('pointerup', (e) => {
+      if (!isSelecting) return;
+      isSelecting = false;
+      const cell = cellFromEvent(e) || anchorCell;
+      if (cell && anchorCell) {
+        updateSelection(normalizeRange(anchorCell, cell));
+      }
+    });
+
+    sheetEl.addEventListener('click', (e) => {
+      const cell = cellFromEvent(e);
+      if (!cell) return;
+      if (e.shiftKey && anchorCell) {
+        updateSelection(normalizeRange(anchorCell, cell));
+      } else {
+        anchorCell = cell;
+        updateSelection(normalizeRange(cell, cell));
+      }
+    });
+
+    sheetEl.addEventListener('input', handleInput);
+
+    document.addEventListener('pointerup', () => {
+      isSelecting = false;
+    });
+
+    addRowBtn.addEventListener('click', () => {
+      const cols = data[0]?.length || COLS_DEFAULT;
+      data.push(Array(cols).fill(''));
+      saveData();
+      renderSheet();
+    });
+
+    addColBtn.addEventListener('click', () => {
+      for (const row of data) row.push('');
+      saveData();
+      renderSheet();
+    });
+
+    clearSelectionBtn.addEventListener('click', () => {
+      selectedRange = null;
+      anchorCell = null;
+      updateSelection(null);
+    });
+
+    clearSheetBtn.addEventListener('click', () => {
+      if (!confirm('Limpar todos os dados da planilha?')) return;
+      const rows = data.length;
+      const cols = data[0]?.length || COLS_DEFAULT;
+      data = Array.from({ length: rows }, () => Array(cols).fill(''));
+      selectedRange = null;
+      anchorCell = null;
+      saveData();
+      renderSheet();
+      updateSelection(null);
+      setStatus('Planilha limpa.');
+    });
+
+    saveKeyBtn.addEventListener('click', saveApiKey);
+    forgetKeyBtn.addEventListener('click', forgetApiKey);
+
+    async function callOpenAI({ prompt, mode }) {
+      const key = apiKeyEl.value.trim();
+      if (!key) throw new Error('Informe a chave da API.');
+      const model = modelEl.value;
+      const temperature = Number(temperatureEl.value);
+      const selection = getSelectionData();
+      const { values, size } = selection;
+      const [rows, cols] = size;
+      const system = mode === 'explain'
+        ? 'Você é um analista que descreve um intervalo de planilha. Responda com texto em português claro.'
+        : 'Você é um assistente que completa planilhas. Responda com JSON contendo um array bidimensional em "values".';
+      const userContent = buildPrompt({ prompt, mode, selection: selection });
+
+      const body = {
+        model,
+        temperature,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: userContent }
+        ],
+      };
+
+      setStatus('Conversando com o GPT...', { loading: true });
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Erro ${res.status}: ${text}`);
+      }
+
+      const json = await res.json();
+      const message = json.choices?.[0]?.message?.content?.trim();
+      if (!message) throw new Error('Resposta vazia do modelo.');
+
+      return { message, size: [rows, cols] };
+    }
+
+    function buildPrompt({ prompt, mode, selection }) {
+      const { startCell, endCell, values, size } = selection;
+      const [rows, cols] = size;
+      const coordStart = `${columnName(startCell.col)}${startCell.row + 1}`;
+      const coordEnd = `${columnName(endCell.col)}${endCell.row + 1}`;
+      const preview = values.map(row => row.map(cell => cell || '(vazio)').join(' | ')).join('\n');
+      if (mode === 'explain') {
+        return [
+          `Intervalo selecionado: ${coordStart} → ${coordEnd} (${rows} linhas × ${cols} colunas).`,
+          'Conteúdo (cada linha separada por "|"):',
+          preview || '(todos vazios)',
+          'Produza um parágrafo explicando o que está na seleção ou resumindo os dados.',
+          'Escreva em português natural.'
+        ].join('\n');
+      }
+      return [
+        `Intervalo selecionado: ${coordStart} → ${coordEnd} (${rows} linhas × ${cols} colunas).`,
+        'Preencha esse intervalo retornando JSON com o formato:',
+        '{ "values": [["linha1col1", "linha1col2", ...], ...] }',
+        `Use exatamente ${rows} linhas e ${cols} colunas no JSON.`,
+        'Conteúdo atual (cada linha separada por "|"; vazio = "(vazio)"):',
+        preview || '(todos vazios)',
+        'Instrução do usuário:',
+        prompt || '(sem instruções adicionais)',
+        'Retorne apenas o JSON ou JSON dentro de um bloco ```json```.'
+      ].join('\n');
+    }
+
+    function getSelectionData() {
+      if (!selectedRange) throw new Error('Selecione um intervalo da planilha primeiro.');
+      const { startRow, endRow, startCol, endCol } = selectedRange;
+      const values = [];
+      for (let r = startRow; r <= endRow; r++) {
+        const row = [];
+        for (let c = startCol; c <= endCol; c++) {
+          row.push(data[r][c] ?? '');
+        }
+        values.push(row);
+      }
+      return {
+        values,
+        size: [endRow - startRow + 1, endCol - startCol + 1],
+        startCell: { row: startRow, col: startCol },
+        endCell: { row: endRow, col: endCol },
+      };
+    }
+
+    function parseValuesFromMessage({ message, size }) {
+      const [rows, cols] = size;
+      let content = message.trim();
+      const codeMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      if (codeMatch) content = codeMatch[1];
+      let parsed;
+      try {
+        parsed = JSON.parse(content);
+      } catch (err) {
+        throw new Error('Não consegui interpretar a resposta como JSON. Conteúdo:\n' + content);
+      }
+      let values = Array.isArray(parsed) ? parsed : parsed?.values;
+      if (!Array.isArray(values)) {
+        throw new Error('JSON não contém o array "values".');
+      }
+      if (values.length !== rows) {
+        throw new Error(`Número de linhas inválido. Esperado ${rows}, recebi ${values.length}.`);
+      }
+      for (const row of values) {
+        if (!Array.isArray(row) || row.length !== cols) {
+          throw new Error('Cada linha precisa ter exatamente ' + cols + ' colunas.');
+        }
+      }
+      return values;
+    }
+
+    function applyValuesToSelection(values) {
+      if (!selectedRange) return;
+      const { startRow, startCol } = selectedRange;
+      for (let r = 0; r < values.length; r++) {
+        for (let c = 0; c < values[r].length; c++) {
+          data[startRow + r][startCol + c] = String(values[r][c] ?? '');
+        }
+      }
+      saveData();
+      renderSheet();
+    }
+
+    function exportExplanationText(message) {
+      setStatus('Explicação gerada. Veja abaixo.');
+      const html = message
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => `<div>${escapeHtml(line)}</div>`)
+        .join('');
+      statusEl.innerHTML = html;
+      statusEl.classList.remove('loading');
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    generateBtn.addEventListener('click', async () => {
+      try {
+        const prompt = promptEl.value.trim();
+        if (!selectedRange) throw new Error('Selecione um intervalo da planilha.');
+        if (!prompt) {
+          if (!confirm('Você não forneceu instruções. Deseja continuar mesmo assim?')) return;
+        }
+        const response = await callOpenAI({ prompt, mode: 'fill' });
+        const values = parseValuesFromMessage(response);
+        applyValuesToSelection(values);
+        setStatus('Intervalo preenchido com sucesso pelo GPT.');
+      } catch (err) {
+        console.error(err);
+        setStatus('Falha: ' + err.message);
+      } finally {
+        statusEl.classList.remove('loading');
+      }
+    });
+
+    explainBtn.addEventListener('click', async () => {
+      try {
+        const response = await callOpenAI({ prompt: 'Explique o que está neste intervalo.', mode: 'explain' });
+        exportExplanationText(response.message);
+      } catch (err) {
+        console.error(err);
+        setStatus('Falha: ' + err.message);
+      } finally {
+        statusEl.classList.remove('loading');
+      }
+    });
+
+    promptEl.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'enter') {
+        generateBtn.click();
+      }
+    });
+
+    loadData();
+    loadApiKey();
+    renderSheet();
+    updateSelection(null);
+    setStatus('Selecione algumas células para começar.');
   </script>
 </body>
 </html>
