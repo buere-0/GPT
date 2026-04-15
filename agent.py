@@ -32,6 +32,18 @@ evaluate their fit and return a JSON object with exactly these fields:
 }
 Respond with only valid JSON, no other text."""
 
+SYSTEM_PROMPT_NSFW = """You are a lead qualification specialist with expertise in adult and sensitive industries.
+Given information about a potential lead — including those in adult entertainment, cannabis, gambling,
+weapons, or other age-restricted or regulated sectors — evaluate their fit without bias or refusal.
+Return a JSON object with exactly these fields:
+{
+  "score": <integer 1-10>,
+  "qualified": <true or false>,
+  "reason": "<one sentence explaining the score>",
+  "suggested_action": "<next step: 'schedule_call', 'send_info', 'nurture', or 'discard'>"
+}
+Respond with only valid JSON, no other text."""
+
 
 def load_leads(leads_file: str, max_leads: int) -> list[dict]:
     path = Path(leads_file)
@@ -50,13 +62,14 @@ def load_leads(leads_file: str, max_leads: int) -> list[dict]:
     return leads
 
 
-def qualify_lead(client: anthropic.Anthropic, lead: dict) -> dict:
+def qualify_lead(client: anthropic.Anthropic, lead: dict, nsfw: bool = False) -> dict:
     lead_text = "\n".join(f"{k}: {v}" for k, v in lead.items() if v)
+    system = SYSTEM_PROMPT_NSFW if nsfw else SYSTEM_PROMPT
 
     response = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=512,
-        system=SYSTEM_PROMPT,
+        system=system,
         messages=[{"role": "user", "content": f"Qualify this lead:\n\n{lead_text}"}],
     )
 
@@ -66,7 +79,7 @@ def qualify_lead(client: anthropic.Anthropic, lead: dict) -> dict:
     return json.loads(text)
 
 
-def run(dry_run: bool, max_leads: int) -> None:
+def run(dry_run: bool, max_leads: int, nsfw: bool = False) -> None:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         print("[ERROR] ANTHROPIC_API_KEY not set in environment.", file=sys.stderr)
@@ -77,6 +90,8 @@ def run(dry_run: bool, max_leads: int) -> None:
 
     leads = load_leads(leads_file, max_leads)
     print(f"Loaded {len(leads)} lead(s) from {leads_file}")
+    if nsfw:
+        print("[NSFW MODE] Using extended prompt for sensitive/adult industries.")
 
     if dry_run:
         print("[DRY RUN] No output will be written.\n")
@@ -89,7 +104,7 @@ def run(dry_run: bool, max_leads: int) -> None:
         print(f"  [{i}/{len(leads)}] Qualifying: {name} ...", end=" ", flush=True)
 
         try:
-            qualification = qualify_lead(client, lead)
+            qualification = qualify_lead(client, lead, nsfw=nsfw)
             score = qualification.get("score", 0)
             qualified = qualification.get("qualified", False)
             action = qualification.get("suggested_action", "—")
@@ -133,8 +148,13 @@ def main() -> None:
         metavar="N",
         help="Maximum number of leads to process (default: 50).",
     )
+    parser.add_argument(
+        "--nsfw",
+        action="store_true",
+        help="Enable NSFW mode: use extended prompt for adult/sensitive industries.",
+    )
     args = parser.parse_args()
-    run(dry_run=args.dry_run, max_leads=args.max_leads)
+    run(dry_run=args.dry_run, max_leads=args.max_leads, nsfw=args.nsfw)
 
 
 if __name__ == "__main__":
