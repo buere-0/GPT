@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NSFW Filter</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f0f13;
+      color: #e2e2e2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      color: #888;
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: #1a1a24;
+      border: 1px solid #2a2a3a;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    /* Drop zone */
+    #drop-zone {
+      border: 2px dashed #3a3a55;
+      border-radius: 12px;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    #drop-zone.drag-over {
+      border-color: #a78bfa;
+      background: #1e1e30;
+    }
+
+    #drop-zone svg {
+      width: 48px;
+      height: 48px;
+      stroke: #555;
+      margin-bottom: 0.8rem;
+    }
+
+    #drop-zone p { color: #777; font-size: 0.9rem; }
+    #drop-zone span { color: #a78bfa; text-decoration: underline; cursor: pointer; }
+    #file-input { display: none; }
+
+    /* Preview */
+    #preview-wrap { display: none; margin-top: 1.2rem; text-align: center; }
+    #preview-img {
+      max-height: 220px;
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid #2a2a3a;
+      object-fit: contain;
+    }
+
+    /* Controls */
+    .controls {
+      margin-top: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    label.thresh-label {
+      font-size: 0.85rem;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: #a78bfa;
+    }
+
+    #thresh-val {
+      font-size: 0.85rem;
+      color: #a78bfa;
+      width: 2.5rem;
+      text-align: right;
+    }
+
+    button#analyze-btn {
+      width: 100%;
+      margin-top: 1.2rem;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7c3aed, #3b82f6);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button#analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Result */
+    #result { margin-top: 1.5rem; display: none; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.safe    { background: #14532d; color: #4ade80; }
+    .badge.unsafe  { background: #7f1d1d; color: #f87171; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .stat {
+      background: #12121a;
+      border: 1px solid #2a2a3a;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+    }
+
+    .stat .label { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.2rem; }
+
+    .reason-box {
+      margin-top: 0.8rem;
+      background: #12121a;
+      border: 1px solid #2a2a3a;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      font-size: 0.9rem;
+      color: #bbb;
+      line-height: 1.5;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      margin-top: 1rem;
+      background: #2d1010;
+      border: 1px solid #5a1a1a;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      color: #f87171;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>NSFW Filter</h1>
+  <p>Analise imagens com Claude Vision</p>
+</header>
+
+<div class="card">
+  <div id="drop-zone">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+    </svg>
+    <p>Arraste uma imagem aqui ou <span id="browse-link">clique para selecionar</span></p>
+    <p style="margin-top:0.4rem;font-size:0.8rem;">JPEG, PNG, GIF, WebP — máx. 10 MB</p>
+    <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,image/webp" />
+  </div>
+
+  <div id="preview-wrap">
+    <img id="preview-img" alt="Preview" />
+  </div>
+
+  <div class="controls">
+    <label class="thresh-label" for="threshold">Limiar de confiança:</label>
+    <input type="range" id="threshold" min="0" max="1" step="0.05" value="0.7" />
+    <span id="thresh-val">0.70</span>
+  </div>
+
+  <button id="analyze-btn" disabled>Analisar imagem</button>
+
+  <div id="result"></div>
+</div>
+
+<script>
+  const dropZone    = document.getElementById('drop-zone');
+  const browseLink  = document.getElementById('browse-link');
+  const fileInput   = document.getElementById('file-input');
+  const previewWrap = document.getElementById('preview-wrap');
+  const previewImg  = document.getElementById('preview-img');
+  const threshSlider= document.getElementById('threshold');
+  const threshVal   = document.getElementById('thresh-val');
+  const analyzeBtn  = document.getElementById('analyze-btn');
+  const resultDiv   = document.getElementById('result');
+
+  let selectedFile = null;
+
+  browseLink.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  threshSlider.addEventListener('input', () => {
+    threshVal.textContent = parseFloat(threshSlider.value).toFixed(2);
+  });
+
+  function setFile(file) {
+    selectedFile = file;
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewWrap.style.display = 'block';
+    analyzeBtn.disabled = false;
+    resultDiv.style.display = 'none';
+    resultDiv.innerHTML = '';
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    analyzeBtn.disabled = true;
+    analyzeBtn.innerHTML = '<span class="spinner"></span>Analisando...';
+    resultDiv.style.display = 'none';
+    resultDiv.innerHTML = '';
+
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+    formData.append('threshold', threshSlider.value);
+
+    try {
+      const res = await fetch('/analyze', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.error) {
+        resultDiv.innerHTML = `<div class="error-box">${data.error}</div>`;
+      } else {
+        const flagged = data.flagged;
+        const confidence = (data.confidence * 100).toFixed(1);
+        const categories = data.categories && data.categories.length
+          ? data.categories.join(', ')
+          : 'nenhuma';
+
+        resultDiv.innerHTML = `
+          <div style="text-align:center;">
+            <span class="badge ${flagged ? 'unsafe' : 'safe'}">
+              ${flagged ? 'NSFW' : 'SEGURO'}
+            </span>
+          </div>
+          <div class="result-grid">
+            <div class="stat">
+              <div class="label">Confiança</div>
+              <div class="value">${confidence}%</div>
+            </div>
+            <div class="stat">
+              <div class="label">Categorias</div>
+              <div class="value" style="font-size:0.9rem;">${categories}</div>
+            </div>
+          </div>
+          <div class="reason-box">${data.reason || '—'}</div>
+        `;
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `<div class="error-box">Erro de conexão com o servidor.</div>`;
+    } finally {
+      resultDiv.style.display = 'block';
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = 'Analisar imagem';
+    }
+  });
+</script>
+</body>
+</html>
