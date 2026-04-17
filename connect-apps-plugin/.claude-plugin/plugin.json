@@ -1,0 +1,8 @@
+{
+  "name": "connect-apps",
+  "description": "Connects the lead qualification agent to external apps: CRM export, Slack notifications, and Google Sheets sync.",
+  "version": "1.0.0",
+  "author": {
+    "name": "buere-0"
+  }
+}
